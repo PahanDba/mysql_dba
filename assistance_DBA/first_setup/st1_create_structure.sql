@@ -139,7 +139,7 @@ ENGINE=InnoDB COMMENT = 'The table stores variables from all MySQL servers.';
 #This table stores the history for each global variable from each MySQL server.
 CREATE TABLE `assistant_dba`.`history_mysql_global_var` (
   `var_id_spr` BIGINT UNSIGNED NOT NULL,
-  `variable_value` VARCHAR(2048) NULL,
+  `variable_value` VARCHAR(4096) NULL,
   `data` DATE NOT NULL,
   PRIMARY KEY (`var_id_spr`, `data`),
   CONSTRAINT `FK_history_mysql_global_var_list_mysql_global_var`
@@ -197,8 +197,8 @@ CREATE TABLE `assistant_dba`.`list_mysql_routine`(
    `routine_name` varchar(64) NOT NULL,
    `routine_type` varchar(13) NOT NULL,
    `data_type` varchar(64) NOT NULL,
-   `character_maximum_length` int(21),
-   `character_octet_length` int(21),
+   `character_maximum_length` bigint(20),
+   `character_octet_length` bigint(20),
    `numeric_precision` int(21),
    `numeric_scale` int(21),
    `datetime_precision` bigint(21) unsigned,
@@ -356,6 +356,27 @@ values
 ('10.11.6-MariaDB', (select id_major_minor from assistant_dba.version_major_minor_mariadb where version_number='10.11')),
 ('10.11.7-MariaDB', (select id_major_minor from assistant_dba.version_major_minor_mariadb where version_number='10.11'));
 
+#This table stores MySQL/Percona versions with major and minor symbols.
+  CREATE TABLE `assistant_dba`.`version_major_minor_mysql_percona` (
+  `id_major_minor` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `version_number` VARCHAR(10) NOT NULL,
+  PRIMARY KEY (`id_major_minor`),
+  UNIQUE INDEX `version_number_UNIQUE` (`version_number` ASC) VISIBLE)
+ ENGINE=InnoDB COMMENT = 'This table stores MySQL/Percona versions with major and minor symbols.';
+ #This table stores MySQL/Percona versions with all symbols.
+ CREATE TABLE `assistant_dba`.`version_compability_mysql_percona` (
+  `id_version` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `version_number` VARCHAR(20) NOT NULL,
+  `id_major_minor` SMALLINT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id_version`),
+  UNIQUE INDEX `version_number_id_major_minor_UX` (`version_number` ASC, `id_major_minor` ASC) VISIBLE,
+  INDEX `FK_version_compability_mysql_percona_id_major_minor_idx` (`id_major_minor` ASC) VISIBLE,
+  CONSTRAINT `FK_version_compability_mysql_percona_id_major_minor`
+    FOREIGN KEY (`id_major_minor`)
+    REFERENCES `assistant_dba`.`version_major_minor_mysql_percona` (`id_major_minor`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ ENGINE=InnoDB COMMENT = 'This table stores MySQL/Percona versions with all symbols.';
 
 
 
@@ -1230,7 +1251,7 @@ DELIMITER ;
 #This procedure inserts a global variable in a temporary table for each server.
 drop procedure  if exists `assistant_dba`.`insert_global_var`;
 DELIMITER $$
-create procedure `assistant_dba`.`insert_global_var` (in db_server_name_list_db nvarchar(1024), in server_name_global_var nvarchar(1024), in in_server_id int, in in_variable_name varchar(64),in in_variable_value varchar(2048)) 
+create procedure `assistant_dba`.`insert_global_var` (in db_server_name_list_db nvarchar(1024), in server_name_global_var nvarchar(1024), in in_server_id int, in in_variable_name varchar(64),in in_variable_value varchar(4096)) 
 begin
 set @db_name=db_server_name_list_db;
 set @table_name1:=server_name_global_var;
@@ -1295,7 +1316,7 @@ DELIMITER ;
 #This procedure inserts values into a global variable in a temporary table for each MySQL server.
 drop procedure  if exists `assistant_dba`.`insert_global_var_ext`;
 DELIMITER $$
-create procedure `assistant_dba`.`insert_global_var_ext` (in db_server_name_list_db nvarchar(1024), in server_name_global_var nvarchar(1024),in in_var_id_spr bigint, in in_server_id int, in in_variable_name varchar(64),in in_variable_value varchar(2048)) 
+create procedure `assistant_dba`.`insert_global_var_ext` (in db_server_name_list_db nvarchar(1024), in server_name_global_var nvarchar(1024),in in_var_id_spr bigint, in in_server_id int, in in_variable_name varchar(64),in in_variable_value varchar(4096)) 
 #call assistant_dba.insert_global_var_ext('$conn_db_main_temp','$tbl_server_name_global_var_ext', $var_id_spr, $server_id, '$variable_name','$variable_value')
 begin
 set @db_name=db_server_name_list_db;
@@ -2022,6 +2043,45 @@ create PROCEDURE `assistant_dba`.`add_version_compability_mariadb`(in_version_nu
 begin
 insert into `assistant_dba`.`version_compability_mariadb` (version_number,id_major_minor) 
 values (in_version_number_all, (select id_major_minor from assistant_dba.version_major_minor_mariadb where version_number=in_version_number_mm));
+end$$
+DELIMITER ;
+
+###Percona/MySQL
+#compare_version_mariabackup
+drop procedure  if exists `assistant_dba`.`compare_version_mysql_percona`;
+DELIMITER $$
+create PROCEDURE `assistant_dba`.`compare_version_mysql_percona`(in_version_number_db varchar(20), in_version_number_sb varchar(20))
+begin
+with value_sb as (
+select vmmm.id_major_minor 
+from `assistant_dba`.`version_major_minor_mysql_percona` vmmm
+join `assistant_dba`.`version_compability_mysql_percona` vcm
+on vcm.id_major_minor=vmmm.id_major_minor
+where vcm.version_number= in_version_number_sb),
+value_db as (
+select vmmm.id_major_minor 
+from `assistant_dba`.`version_major_minor_mysql_percona` vmmm
+join `assistant_dba`.`version_compability_mysql_percona` vcm
+on vcm.id_major_minor=vmmm.id_major_minor
+where vcm.version_number= in_version_number_db)
+SELECT EXISTS(SELECT value_sb.id_major_minor, value_db.id_major_minor FROM value_sb join value_db on value_db.id_major_minor=value_sb.id_major_minor) as result;
+end$$
+DELIMITER ;
+#add version number major_minor_mariadb
+drop procedure  if exists `assistant_dba`.`add_version_major_minor_mysql_percona`;
+DELIMITER $$
+create PROCEDURE `assistant_dba`.`add_version_major_minor_mysql_percona`(in_version_number_db varchar(10))
+begin
+insert into `assistant_dba`.`version_major_minor_mysql_percona` (version_number) values (in_version_number_db);
+end$$
+DELIMITER ;
+#add version number major_minor_mariadb
+drop procedure  if exists `assistant_dba`.`add_version_compability_mysql_percona`;
+DELIMITER $$
+create PROCEDURE `assistant_dba`.`add_version_compability_mysql_percona`(in_version_number_all varchar(20), in_version_number_mm varchar(10))
+begin
+insert into `assistant_dba`.`version_compability_mysql_percona` (version_number,id_major_minor) 
+values (in_version_number_all, (select id_major_minor from assistant_dba.version_major_minor_mysql_percona where version_number=in_version_number_mm));
 end$$
 DELIMITER ;
 

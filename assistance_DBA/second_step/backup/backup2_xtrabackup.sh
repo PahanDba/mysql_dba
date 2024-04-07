@@ -1,9 +1,9 @@
 #!/bin/bash
 #Get list backup tasks for move to queue for start backup jobs 
 #Written by Pavel A. Polikov https://github.com/PahanDba/mysql_dba
-#sudo sed -i -e 's/\r$//' /etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
-#sudo chown root  /etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
-#sudo chmod 755  /etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
+#sudo sed -i -e 's/\r$//' /etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
+#sudo chown root  /etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
+#sudo chmod 755  /etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
 #Block input parametrs : Begin 
 in_task_id=$task_id 
 in_bt_id=$bt_id
@@ -45,7 +45,8 @@ path_config_mysql_backup="/etc/mysql/dba_conf/backup/"
 path_config_mysql_localhost="/etc/mysql/dba_conf"
 message_for_trap="This error may be an exception that I didn't process in the script. Check the log files $log_error and $log_exec_task_id. server_name:$in_server_name backup_task_name:$in_backup_task_name bt_id:$in_bt_id"
 tools_run="/usr/bin/mariadb"
-tools_backup="/usr/bin/mariadb-backup"
+tools_run_mysql="/usr/bin/mysql"
+tools_backup="/usr/bin/xtrabackup"
 set -e
 trap 'LAST_COMMAND=$CURRENT_COMMAND; CURRENT_COMMAND=$BASH_COMMAND;' debug 
 trap 'ERROR_CODE=$?; ERROR_MESSAGE=$message_for_trap; FAILED_COMMAND=$LAST_COMMAND; echo -e "Subject:$message_for_trap  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand before error: \"$FAILED_COMMAND\" \nfailed with message: \"$ERROR_MESSAGE \" " | /usr/sbin/sendmail $recipient_mail; $tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e " call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);call assistant_dba.upd_btrm_wait_task_id($in_task_id); call assistant_dba.upd_btm_last_time($in_bt_id);" ' ERR INT TERM
@@ -87,13 +88,13 @@ echo "use_memory:$use_memory" >> $path_file_main_task_id_log_backup_server
 $tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_file_log($in_task_id,'$path_file_main_task_id_log_backup_server');"  2>$path_file_main_error_log_backup_server
 in_date_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 $tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_start_time($in_task_id,'$in_date_start_time');"  2>$path_file_main_error_log_backup_server
-#I'm checking for availability mariabackup on server database
-replace_what_string="mariabackup:"
+#I'm checking for availability xtrabackup on server database
+replace_what_string="xtrabackup:"
 replace_for_string=""
-in_ip_mariabackup_whereis=$(ssh -p "$remote_port" "$in_user_for_backup@$in_ip" "whereis mariadb-backup") >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
-in_ip_mariabackup_whereis_replace_for_check=${in_ip_mariabackup_whereis/$replace_what_string/$replace_for_string}
-if [[ ! $in_ip_mariabackup_whereis_replace_for_check = *[!\ ]* ]]; then
-	error_message_out="This is server doesn't have mariadb-backup on $in_ip. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
+in_ip_xtrabackup_whereis=$(ssh -p "$remote_port" "$in_user_for_backup@$in_ip" "whereis xtrabackup") >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
+in_ip_xtrabackup_whereis_replace_for_check=${in_ip_xtrabackup_whereis/$replace_what_string/$replace_for_string}
+if [[ ! $in_ip_xtrabackup_whereis_replace_for_check = *[!\ ]* ]]; then
+	error_message_out="This is server doesn't have xtrabackup on $in_ip. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
 	echo "$error_message_out " >> $path_file_main_task_id_log_backup_server
 	in_date_end_time=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time($in_task_id,'$in_date_end_time'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100);"  2>$path_file_main_error_log_backup_server 
@@ -105,14 +106,14 @@ if [[ ! $in_ip_mariabackup_whereis_replace_for_check = *[!\ ]* ]]; then
 	echo -e "Subject:$error_message_out.  \n\nserver script: $HOSTNAME \npath script: $path1 \nfailed with message: \"$error_message_out \" " | /usr/sbin/sendmail $recipient_mail; 
 	exit 1
 fi
-echo "mariadb-backup whereis from $in_ip $in_ip_mariabackup_whereis" >> $path_file_main_task_id_log_backup_server
-#I'm checking for availability mariabackup on server storage backup
-replace_what_string="mariadb-backup:"
+echo "xtrabackup whereis from $in_ip $in_ip_xtrabackup_whereis" >> $path_file_main_task_id_log_backup_server
+#I'm checking for availability xtrabackup on server storage backup
+replace_what_string="xtrabackup:"
 replace_for_string=""
-in_server_for_backup_mariabackup_whereis=$(ssh -p "$remote_port" "$in_user_for_backup@$in_server_for_backup" "whereis mariadb-backup") >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
-in_server_for_backup_mariabackup_whereis_replace_for_check=${in_server_for_backup_mariabackup_whereis/$replace_what_string/$replace_for_string}
-if [[ ! $in_ip_mariabackup_whereis_replace_for_check = *[!\ ]* ]]; then
-	error_message_out="This is server doesn't have mariabackup on $in_server_for_backup. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
+in_server_for_backup_xtrabackup_whereis=$(ssh -p "$remote_port" "$in_user_for_backup@$in_server_for_backup" "whereis xtrabackup") >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
+in_server_for_backup_xtrabackup_whereis_replace_for_check=${in_server_for_backup_xtrabackup_whereis/$replace_what_string/$replace_for_string}
+if [[ ! $in_ip_xtrabackup_whereis_replace_for_check = *[!\ ]* ]]; then
+	error_message_out="This is server doesn't have xtrabackup on $in_server_for_backup. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
 	echo "$error_message_out" >> $path_file_main_task_id_log_backup_server
 	in_date_end_time=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time($in_task_id,'$in_date_end_time');call assistant_dba.upd_btrm_task_progress($in_task_id,-100);"  2>$path_file_main_error_log_backup_server 
@@ -120,30 +121,32 @@ if [[ ! $in_ip_mariabackup_whereis_replace_for_check = *[!\ ]* ]]; then
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server	
 	echo "Cleaning wait_task_id=$task_id on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_wait_task_id($in_task_id);"  2>$path_file_main_error_log_backup_server
-	#echo "This is server doesn't have mariabackup on $in_server_for_backup" > $path_file_main_error_log_backup_server
+	#echo "This is server doesn't have xtrabackup on $in_server_for_backup" > $path_file_main_error_log_backup_server
 	echo "$error_message_out" > $path_file_main_error_log_backup_server
 	echo -e "Subject:$error_message_out.   \n\nserver script: $HOSTNAME \npath script: $path1 \nfailed with message: \"$error_message_out \" " | /usr/sbin/sendmail $recipient_mail; 
 	exit 1
 fi
-echo "mariadb-backup whereis from $in_server_for_backup $in_server_for_backup_mariabackup_whereis" >> $path_file_main_task_id_log_backup_server
-#I'm checking for version mariabackup on server database
-in_ip_mariabackup_version=$(ssh -p "$remote_port" "$in_user_for_backup@$in_ip" "mariadb-backup -v" 2>&1) >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
-echo "mariabackup version '$in_ip_mariabackup_version' on $in_ip" >> $path_file_main_task_id_log_backup_server
-#I'm checking for version mariabackup on server storage backup
-in_server_for_backup_mariabackup_version=$(ssh -p "$remote_port" "$in_user_for_backup@$in_server_for_backup" "mariadb-backup -v"  2>&1) >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
-echo "mariabackup version '$in_server_for_backup_mariabackup_version' on $in_server_for_backup" >> $path_file_main_task_id_log_backup_server
+echo "xtrabackup whereis from $in_server_for_backup $in_server_for_backup_xtrabackup_whereis" >> $path_file_main_task_id_log_backup_server
+#I'm checking for version xtrabackup on server database
+in_ip_xtrabackup_version=$(ssh -p "$remote_port" "$in_user_for_backup@$in_ip" "xtrabackup -v" 2>&1) >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
+in_ip_xtrabackup_version=$(echo "$in_ip_xtrabackup_version" | tail -n1) >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
+echo "xtrabackup version '$in_ip_xtrabackup_version' on $in_ip" >> $path_file_main_task_id_log_backup_server
+#I'm checking for version xtrabackup on server storage backup
+in_server_for_backup_xtrabackup_version=$(ssh -p "$remote_port" "$in_user_for_backup@$in_server_for_backup" "xtrabackup -v"  2>&1) >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
+in_server_for_backup_xtrabackup_version=$(echo "$in_server_for_backup_xtrabackup_version" | tail -n1) >> $path_file_main_task_id_log_backup_server 2>$path_file_main_error_log_backup_server
+echo "xtrabackup version '$in_server_for_backup_xtrabackup_version' on $in_server_for_backup" >> $path_file_main_task_id_log_backup_server
 ##############################
 #comparison versions for working
-in_ip_mariabackup_version_sql=$(awk -F ' ' '{print $6}' <<< $in_ip_mariabackup_version)
-in_server_for_backup_mariabackup_version_sql=$(awk -F ' ' '{print $6}' <<< $in_server_for_backup_mariabackup_version)
-echo "in_ip_mariabackup_version_sql:$in_ip_mariabackup_version_sql" >> $path_file_main_task_id_log_backup_server
-echo "in_server_for_backup_mariabackup_version_sql:$in_server_for_backup_mariabackup_version_sql" >> $path_file_main_task_id_log_backup_server
-rezult_comparsion_versions=$($tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -N -D $conn_db -e "call assistant_dba.compare_version_mariabackup('$in_ip_mariabackup_version_sql','$in_server_for_backup_mariabackup_version_sql');"  2>$path_file_main_error_log_backup_server)
+in_ip_xtrabackup_version_sql=$(awk -F ' ' '{print $3}' <<< $in_ip_xtrabackup_version)
+in_server_for_backup_xtrabackup_version_sql=$(awk -F ' ' '{print $3}' <<< $in_server_for_backup_xtrabackup_version)
+echo "in_ip_xtrabackup_version_sql:$in_ip_xtrabackup_version_sql" >> $path_file_main_task_id_log_backup_server
+echo "in_server_for_backup_xtrabackup_version_sql:$in_server_for_backup_xtrabackup_version_sql" >> $path_file_main_task_id_log_backup_server
+rezult_comparsion_versions=$($tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -N -D $conn_db -e "call assistant_dba.compare_version_mysql_percona('$in_ip_xtrabackup_version_sql','$in_server_for_backup_xtrabackup_version_sql');"  2>$path_file_main_error_log_backup_server)
 echo "rezult_comparsion_versions: $rezult_comparsion_versions" >> $path_file_main_task_id_log_backup_server
 rezult_comparsion_versions_good=1
 #############################
 if [[ $rezult_comparsion_versions -ne $rezult_comparsion_versions_good ]]; then
-	error_message_out="On servers $in_ip and $in_server_for_backup differents versions mariabackup. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
+	error_message_out="On servers $in_ip and $in_server_for_backup differents versions xtrabackup. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
 	echo "$error_message_out" >> $path_file_main_task_id_log_backup_server
 	in_date_end_time=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time($in_task_id,'$in_date_end_time'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100);"  2>$path_file_main_error_log_backup_server 
@@ -199,14 +202,14 @@ echo "parameter in_parallel=$in_parallel " >> $path_file_main_task_id_log_backup
 echo "parameter in_pigz=$in_pigz " >> $path_file_main_task_id_log_backup_server
 fi
 #Check galera option
-command_for_ssh_galera_check="$tools_run --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf -N -D $conn_db_mysql -e \"select variable_value from information_schema.global_variables where variable_name='wsrep_on';\""  #2>&1 >> $path_file_main_task_id_log_backup_server
+command_for_ssh_galera_check="$tools_run_mysql --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf -N -D $conn_db_mysql -e \"select variable_value from performance_schema.global_variables where variable_name='wsrep_cluster_address';\""  #2>&1 >> $path_file_main_task_id_log_backup_server
 galera_check=$(ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_galera_check" 2>&1) >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
 echo "galera_check:$galera_check" >> $path_file_main_task_id_log_backup_server
-if [[ "$galera_check" == "ON" ]]; then
+if [[ "$galera_check" == *"gcom"* ]]; then
 	galera_option="--galera-info"
 	slave_option=" "
 fi
-if [[ "$galera_check" == "OFF" ]]; then
+if [[ "$galera_check" != *"gcom"* ]]; then
 	galera_option=" "
 	slave_option="--slave-info --safe-slave-backup"
 fi
@@ -226,7 +229,7 @@ echo "full_path_backup_ssh:$full_path_backup_ssh" >> $path_file_main_task_id_log
 	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_mkdir" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
 	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
 	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
+		echo "$subject_error on $(date +"%Y%m%d%H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); call assistant_dba.upd_btm_last_time($in_bt_id); "  2>$path_file_main_error_log_backup_server
 		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
@@ -254,7 +257,7 @@ echo "full_path_backup_ssh:$full_path_backup_ssh" >> $path_file_main_task_id_log
 	in_date_start_time_backup=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_start_time_backup($in_task_id,'$in_date_start_time_backup');"  2>$path_file_main_error_log_backup_server
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_task_progress($in_task_id,5);"  2>$path_file_main_error_log_backup_server
-	command_for_ssh="sudo /usr/bin/mariadb-backup --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf --backup --tmpdir=/tmp --parallel=$in_parallel $galera_option $slave_option --innodb_log_buffer_size=$innodb_log_buffer_size_var --innodb_log_file_size=$innodb_log_file_size_var --stream=xbstream --target-dir=/temp/snap | /usr/bin/pigz -f -p $in_pigz | ssh  $in_user_for_backup@$in_server_for_backup  -t \"/usr/bin/pigz -f -dc -p $in_pigz | mbstream -x -C $full_path_backup_ssh --parallel=$in_parallel\" " 
+	command_for_ssh="sudo /usr/bin/xtrabackup --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf --backup --tmpdir=/tmp --parallel=$in_parallel $galera_option $slave_option --innodb_log_buffer_size=$innodb_log_buffer_size_var --innodb_log_file_size=$innodb_log_file_size_var --stream=xbstream --target-dir=/tmp | /usr/bin/pigz -f -p $in_pigz | ssh  $in_user_for_backup@$in_server_for_backup  -t \"/usr/bin/pigz -f -dc -p $in_pigz | xbstream -x -C $full_path_backup_ssh --parallel=$in_parallel\" " 
 	echo "command_for_ssh:"$command_for_ssh >> $path_file_main_task_id_log_backup_server
 	subject_error="In during execute backup was error. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
 	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
@@ -276,7 +279,7 @@ echo "full_path_backup_ssh:$full_path_backup_ssh" >> $path_file_main_task_id_log
 	echo "start time prepare on $in_ip on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 	in_date_start_time_prepare=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_start_time_prepare($in_task_id,'$in_date_start_time_prepare');"  2>$path_file_main_error_log_backup_server
-	command_for_ssh_prepare="ssh -q $in_user_for_backup@$in_server_for_backup -t \"/usr/bin/mariadb-backup --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf  --prepare -use-memory=$use_memory --target-dir=$full_path_backup_ssh\"" 
+	command_for_ssh_prepare="ssh -q $in_user_for_backup@$in_server_for_backup -t \"/usr/bin/xtrabackup  --prepare -use-memory=$use_memory --target-dir=$full_path_backup_ssh\"" 
 	echo "command_for_ssh_prepare:"$command_for_ssh_prepare >> $path_file_main_task_id_log_backup_server
 	subject_error="In during prepare backup was error."
 	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_prepare" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
@@ -290,40 +293,19 @@ echo "full_path_backup_ssh:$full_path_backup_ssh" >> $path_file_main_task_id_log
 		exit 1
 	fi
 	echo "end time prepare backup on $in_ip on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-	#This is step 3 copy file xtrabackup from backup server to database server to catalog backup_path_variable_mysql
-	command_for_ssh_copy_xtrabackup=" scp $in_user_for_backup@$in_server_for_backup:$full_path_backup_ssh/xtrabackup* $full_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_xtrabackup:"$command_for_ssh_copy_xtrabackup >> $path_file_main_task_id_log_backup_server
 	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
-	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
-	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); "  2>$path_file_main_error_log_backup_server
-		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
-		exit 1
-	fi
-if [[ "$galera_check" == "ON" ]]; then
-	#This is step 4 copy file mariadb_backup from backup server to database server to catalog backup_path_variable_mysql
-	command_for_ssh_copy_mariadb_backup=" scp $in_user_for_backup@$in_server_for_backup:$full_path_backup_ssh/mariadb_backup* $full_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_mariadb_backup:"$command_for_ssh_copy_mariadb_backup >> $path_file_main_task_id_log_backup_server
-	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_mariadb_backup" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
-	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
-	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); "  2>$path_file_main_error_log_backup_server
-		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
-		exit 1
-	fi
-	#This is step 5 copy file donor_galera_info from backup server to database server to catalog backup_path_variable_mysql
-	command_for_ssh_copy_donor_galera_info=" scp $in_user_for_backup@$in_server_for_backup:$full_path_backup_ssh/donor_galera_info* $full_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_donor_galera_info:"$command_for_ssh_copy_donor_galera_info >> $path_file_main_task_id_log_backup_server
-	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_donor_galera_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_binlog_info="scp $in_user_for_backup@$in_server_for_backup:$full_path_backup_ssh/xtrabackup_binlog_info $full_path_backup_ssh/xtrabackup_binlog_info" 
+	echo "command_for_ssh_copy_xtrabackup_binlog_info:"$command_for_ssh_copy_xtrabackup_binlog_info >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_binlog_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_checkpoints="scp $in_user_for_backup@$in_server_for_backup:$full_path_backup_ssh/xtrabackup_checkpoints $full_path_backup_ssh/xtrabackup_checkpoints" 
+	echo "command_for_ssh_copy_xtrabackup_checkpoints:"$command_for_ssh_copy_xtrabackup_checkpoints >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_checkpoints" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_info="scp $in_user_for_backup@$in_server_for_backup:$full_path_backup_ssh/xtrabackup_info $full_path_backup_ssh/xtrabackup_info" 
+	echo "command_for_ssh_copy_xtrabackup_info:"$command_for_ssh_copy_xtrabackup_info >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_tablespaces="scp $in_user_for_backup@$in_server_for_backup:$full_path_backup_ssh/xtrabackup_tablespaces $full_path_backup_ssh/xtrabackup_tablespaces" 
+	echo "command_for_ssh_copy_xtrabackup_tablespaces:"$command_for_ssh_copy_xtrabackup_tablespaces >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_tablespaces" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
 	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
 	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
 		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
@@ -333,7 +315,6 @@ if [[ "$galera_check" == "ON" ]]; then
 		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
 		exit 1
 	fi	
-fi
 	in_date_end_time_backup=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$in_date_end_time_backup');"  2>$path_file_main_error_log_backup_server
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time($in_task_id,'$in_date_end_time_backup');"  2>$path_file_main_error_log_backup_server
@@ -405,12 +386,10 @@ if [[ "$in_backup_type_description" == "incr" ]] ; then
 	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_mkdir_local" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
 	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
 	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		#echo "In mkdir for backup was error in $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); call assistant_dba.upd_btm_last_time($in_bt_id);"  2>$path_file_main_error_log_backup_server
 		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		#echo -e "Subject:In mkdir backup was error. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
 		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
 		exit 1
 	fi	
@@ -426,7 +405,7 @@ if [[ "$in_backup_type_description" == "incr" ]] ; then
 		in_path_last_full_backup_for_incr=$in_path_last_incr_backup
 		echo "in_path_last_full_backup_for_incr:$in_path_last_full_backup_for_incr" >> $path_file_main_task_id_log_backup_server	
 	fi 
-	command_for_ssh="sudo /usr/bin/mariadb-backup --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf --backup --tmpdir=/tmp --parallel=$in_parallel $galera_option $slave_option --innodb_log_buffer_size=$innodb_log_buffer_size_var --innodb_log_file_size=$innodb_log_file_size_var --stream=xbstream --target-dir=/temp/snap --incremental-basedir=$in_path_last_full_backup_for_incr | /usr/bin/pigz -f -p $in_pigz | ssh  $in_user_for_backup@$in_server_for_backup  -t \"/usr/bin/pigz -f -dc -p $in_pigz | mbstream -x -C $incr_path_backup_ssh --parallel=$in_parallel\" " 
+	command_for_ssh="sudo /usr/bin/xtrabackup --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf --backup --tmpdir=/tmp --parallel=$in_parallel $galera_option $slave_option --innodb_log_buffer_size=$innodb_log_buffer_size_var --innodb_log_file_size=$innodb_log_file_size_var --stream=xbstream --target-dir=/temp --incremental-basedir=$in_path_last_full_backup_for_incr | /usr/bin/pigz -f -p $in_pigz | ssh  $in_user_for_backup@$in_server_for_backup  -t \"/usr/bin/pigz -f -dc -p $in_pigz | xbstream -x -C $incr_path_backup_ssh --parallel=$in_parallel\" " 
 	echo "command_for_ssh:"$command_for_ssh >> $path_file_main_task_id_log_backup_server
 	subject_error="In during execute backup was error. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
 	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
@@ -443,12 +422,19 @@ if [[ "$in_backup_type_description" == "incr" ]] ; then
 		exit 1
 	fi
 	echo "end time execute backup on $in_ip on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-	#This is step 3 copy file xtrabackup from backup server to database server to catalog backup_path_variable_mysql
-if [[ "$galera_check" == "OFF" ]]; then	
-	command_for_ssh_copy_xtrabackup=" scp $in_user_for_backup@$in_server_for_backup:$incr_path_backup_ssh/xtrabackup* $incr_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_xtrabackup:"$command_for_ssh_copy_xtrabackup >> $path_file_main_task_id_log_backup_server
 	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_binlog_info="scp $in_user_for_backup@$in_server_for_backup:$incr_path_backup_ssh/xtrabackup_binlog_info $incr_path_backup_ssh/xtrabackup_binlog_info" 
+	echo "command_for_ssh_copy_xtrabackup_binlog_info:"$command_for_ssh_copy_xtrabackup_binlog_info >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_binlog_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_checkpoints="scp $in_user_for_backup@$in_server_for_backup:$incr_path_backup_ssh/xtrabackup_checkpoints $incr_path_backup_ssh/xtrabackup_checkpoints" 
+	echo "command_for_ssh_copy_xtrabackup_checkpoints:"$command_for_ssh_copy_xtrabackup_checkpoints >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_checkpoints" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_info="scp $in_user_for_backup@$in_server_for_backup:$incr_path_backup_ssh/xtrabackup_info $incr_path_backup_ssh/xtrabackup_info" 
+	echo "command_for_ssh_copy_xtrabackup_info:"$command_for_ssh_copy_xtrabackup_info >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_tablespaces="scp $in_user_for_backup@$in_server_for_backup:$incr_path_backup_ssh/xtrabackup_tablespaces $incr_path_backup_ssh/xtrabackup_tablespaces" 
+	echo "command_for_ssh_copy_xtrabackup_tablespaces:"$command_for_ssh_copy_xtrabackup_tablespaces >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_tablespaces" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
 	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
 	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
 		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
@@ -457,38 +443,7 @@ if [[ "$galera_check" == "OFF" ]]; then
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
 		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
 		exit 1
-	fi
-fi	
-if [[ "$galera_check" == "ON" ]]; then
-	#This is step 4 copy file mariadb_backup from backup server to database server to catalog backup_path_variable_mysql
-	command_for_ssh_copy_mariadb_backup=" scp $in_user_for_backup@$in_server_for_backup:$incr_path_backup_ssh/mariadb_backup* $incr_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_mariadb_backup:"$command_for_ssh_copy_mariadb_backup >> $path_file_main_task_id_log_backup_server
-	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_mariadb_backup" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
-	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
-	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); "  2>$path_file_main_error_log_backup_server
-		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
-		exit 1
-	fi
-	#This is step 5 copy file donor_galera_info from backup server to database server to catalog backup_path_variable_mysql
-	command_for_ssh_copy_donor_galera_info=" scp $in_user_for_backup@$in_server_for_backup:$incr_path_backup_ssh/donor_galera_info* $incr_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_donor_galera_info:"$command_for_ssh_copy_donor_galera_info >> $path_file_main_task_id_log_backup_server
-	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_donor_galera_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
-	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
-	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); "  2>$path_file_main_error_log_backup_server
-		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
-		exit 1
 	fi	
-fi
 	in_date_end_time_backup=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_backup($in_task_id,'$in_date_end_time_backup');"  2>$path_file_main_error_log_backup_server
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time($in_task_id,'$in_date_end_time_backup');"  2>$path_file_main_error_log_backup_server
@@ -561,7 +516,6 @@ if [[ "$in_backup_type_description" == "diff" ]] ; then
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); call assistant_dba.upd_btm_last_time($in_bt_id);"  2>$path_file_main_error_log_backup_server
 		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		#echo -e "Subject:In mkdir backup was error. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
 		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
 		exit 1
 	fi	
@@ -570,7 +524,7 @@ if [[ "$in_backup_type_description" == "diff" ]] ; then
 	in_date_start_time_backup=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_start_time_backup($in_task_id,'$in_date_start_time_backup');"  2>$path_file_main_error_log_backup_server
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_task_progress($in_task_id,5);"  2>$path_file_main_error_log_backup_server
-	command_for_ssh="sudo /usr/bin/mariadb-backup --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf --backup --tmpdir=/tmp --parallel=$in_parallel $galera_option $slave_option --innodb_log_buffer_size=$innodb_log_buffer_size_var --innodb_log_file_size=$innodb_log_file_size_var --stream=xbstream --target-dir=/temp/snap --incremental-basedir=$in_path_last_full_backup | /usr/bin/pigz -f -p $in_pigz | ssh  $in_user_for_backup@$in_server_for_backup  -t \"/usr/bin/pigz -f -dc -p $in_pigz | mbstream -x -C $diff_path_backup_ssh --parallel=$in_parallel\" " 
+	command_for_ssh="sudo /usr/bin/xtrabackup --defaults-extra-file=$path_config_mysql_localhost/localhost.cnf --backup --tmpdir=/tmp --parallel=$in_parallel $galera_option $slave_option --innodb_log_buffer_size=$innodb_log_buffer_size_var --innodb_log_file_size=$innodb_log_file_size_var --stream=xbstream --target-dir=/temp --incremental-basedir=$in_path_last_full_backup | /usr/bin/pigz -f -p $in_pigz | ssh  $in_user_for_backup@$in_server_for_backup  -t \"/usr/bin/pigz -f -dc -p $in_pigz | xbstream -x -C $diff_path_backup_ssh --parallel=$in_parallel\" " 
 	echo "command_for_ssh:"$command_for_ssh >> $path_file_main_task_id_log_backup_server
 	subject_error="In during execute backup was error. Server_name: $in_server_name task_id:$in_task_id backup task name: $in_backup_task_name"
 	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
@@ -587,51 +541,28 @@ if [[ "$in_backup_type_description" == "diff" ]] ; then
 		exit 1
 	fi
 	echo "end time execute backup on $in_ip on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-if [[ "$galera_check" == "OFF" ]]; then	
-	command_for_ssh_copy_xtrabackup=" scp $in_user_for_backup@$in_server_for_backup:$diff_path_backup_ssh/xtrabackup* $diff_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_xtrabackup:"$command_for_ssh_copy_xtrabackup >> $path_file_main_task_id_log_backup_server
 	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_binlog_info="scp $in_user_for_backup@$in_server_for_backup:$diff_path_backup_ssh/xtrabackup_binlog_info $diff_path_backup_ssh/xtrabackup_binlog_info" 
+	echo "command_for_ssh_copy_xtrabackup_binlog_info:"$command_for_ssh_copy_xtrabackup_binlog_info >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_binlog_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_checkpoints="scp $in_user_for_backup@$in_server_for_backup:$diff_path_backup_ssh/xtrabackup_checkpoints $diff_path_backup_ssh/xtrabackup_checkpoints" 
+	echo "command_for_ssh_copy_xtrabackup_checkpoints:"$command_for_ssh_copy_xtrabackup_checkpoints >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_checkpoints" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_info="scp $in_user_for_backup@$in_server_for_backup:$diff_path_backup_ssh/xtrabackup_info $diff_path_backup_ssh/xtrabackup_info" 
+	echo "command_for_ssh_copy_xtrabackup_info:"$command_for_ssh_copy_xtrabackup_info >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
+	command_for_ssh_copy_xtrabackup_tablespaces="scp $in_user_for_backup@$in_server_for_backup:$diff_path_backup_ssh/xtrabackup_tablespaces $diff_path_backup_ssh/xtrabackup_tablespaces" 
+	echo "command_for_ssh_copy_xtrabackup_tablespaces:"$command_for_ssh_copy_xtrabackup_tablespaces >> $path_file_main_task_id_log_backup_server
+	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_xtrabackup_tablespaces" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
 	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
-	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
+	if grep -q 'ERROR:\|Can''t open dir\|failed\|No such file or directory\|cannot' $path_file_main_task_id_log_backup_server; then
 		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); call assistant_dba.upd_btm_last_time($in_bt_id);"  2>$path_file_main_error_log_backup_server
 		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
 		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
 		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
 		exit 1
-	fi
-fi	
-if [[ "$galera_check" == "ON" ]]; then
-	#This is step 4 copy file mariadb_backup from backup server to database server to catalog backup_path_variable_mysql
-	command_for_ssh_copy_mariadb_backup=" scp $in_user_for_backup@$in_server_for_backup:$diff_path_backup_ssh/mariadb_backup* $diff_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_mariadb_backup:"$command_for_ssh_copy_mariadb_backup >> $path_file_main_task_id_log_backup_server
-	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_mariadb_backup" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
-	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
-	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); "  2>$path_file_main_error_log_backup_server
-		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
-		exit 1
-	fi
-	#This is step 5 copy file donor_galera_info from backup server to database server to catalog backup_path_variable_mysql
-	command_for_ssh_copy_donor_galera_info=" scp $in_user_for_backup@$in_server_for_backup:$diff_path_backup_ssh/donor_galera_info* $diff_path_backup_ssh/ " 
-	echo "command_for_ssh_copy_donor_galera_info:"$command_for_ssh_copy_donor_galera_info >> $path_file_main_task_id_log_backup_server
-	subject_error="This is process copy was error. Server_name: $in_ip task_id:$in_task_id backup task name: $in_backup_task_name"
-	ssh -p $remote_port $in_user_for_backup@$in_ip "$command_for_ssh_copy_donor_galera_info" 2>&1 >> $path_file_main_task_id_log_backup_server 2>&1 >> $path_file_main_task_id_log_backup_server
-	date_for_trap=$(date +"%Y-%m-%d %H:%M:%S")
-	if grep -q 'ERROR:\|Can''t open dir\|failed' $path_file_main_task_id_log_backup_server; then
-		echo "$subject_error on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_prepare($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_end_time($in_task_id,'$date_for_trap'); call assistant_dba.upd_btrm_task_progress($in_task_id,-100); "  2>$path_file_main_error_log_backup_server
-		echo "backup_tasks_move_from_run_to_log on server ip:$in_ip task_id:$in_task_id  on $(date +"%Y%m%d %H:%M:%S")" >> $path_file_main_task_id_log_backup_server
-		$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.backup_tasks_move_from_run_to_log($in_task_id);"  2>$path_file_main_error_log_backup_server
-		echo -e "Subject:$subject_error  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand  " | /usr/sbin/sendmail $recipient_mail;
-		exit 1
 	fi	
-fi
 	in_date_end_time_backup=$(date +"%Y-%m-%d %H:%M:%S")
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time_backup($in_task_id,'$in_date_end_time_backup');"  2>$path_file_main_error_log_backup_server
 	$tools_run --defaults-extra-file=$path_config_mysql_backup$conn_server.cnf -D $conn_db -e "call assistant_dba.upd_btrm_end_time($in_task_id,'$in_date_end_time_backup');"  2>$path_file_main_error_log_backup_server

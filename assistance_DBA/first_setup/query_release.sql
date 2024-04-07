@@ -152,7 +152,12 @@ on ss.server_id=smgv.server_id
 #where ss.server_name='server_name';
 order by fmgv.data asc;
 
-
+############################################################
+##These scripts cab take information about 
+############################################################
+select * from assistant_dba.list_clusters;
+select * from assistant_dba.list_server_type;
+select * from assistant_dba.list_sql_type;
 
 ############################################################
 ##These scripts can take information about backup tasks
@@ -172,8 +177,13 @@ SELECT * FROM `assistant_dba`.`backup_task_run_mysql`;
 CALL `assistant_dba`.`add_new_server_type`('prod');
 CALL `assistant_dba`.`add_new_sql_type`('mysql');
 CALL `assistant_dba`.`add_new_cluster`('standalone','only standalone server');
+CALL `assistant_dba`.`add_new_cluster`('percona cluster','percona xtradb cluster');
 CALL `assistant_dba`.`add_new_server_mysql`('mysql30200', '10.10.30.200', 'mysql30200', 1, 'prod','mysql',3306, 'system assistant DBA','not add ip address','standalone');
 CALL `assistant_dba`.`add_new_server_mysql`('mysql30226', '10.10.30.226', 'mysql30226', 1, 'prod','mysql',3306, 'standalone server','not add ip address','standalone');
+CALL `assistant_dba`.`add_new_server_mysql`('mysql3081', '10.10.30.81', 'mysql3081', 1, 'prod','mysql',3306, 'node 1 from percona xtradb cluster','not add ip address','percona cluster');
+CALL `assistant_dba`.`add_new_server_mysql`('mysql3082', '10.10.30.82', 'mysql3082', 1, 'prod','mysql',3306, 'node 2 from percona xtradb cluster','not add ip address','percona cluster');
+CALL `assistant_dba`.`add_new_server_mysql`('mysql3083', '10.10.30.83', 'mysql3083', 1, 'prod','mysql',3306, 'node 3 from percona xtradb cluster','not add ip address','percona cluster');
+
 
 CALL `assistant_dba`.`add_backup_path_variable_mysql`('mysql30226', '/var/lib/smuggler30226', '10.10.30.210', 'smuggler30226');
 call `assistant_dba`.`add_backup_task_mysql` ('mysql30226','full',1,1,1,1,1,1,0, '16:50',0,'23:00',1,10);

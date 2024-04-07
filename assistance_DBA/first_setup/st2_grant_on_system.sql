@@ -47,4 +47,5 @@ grant execute on procedure assistant_dba.upd_btm_last_time   to 'maverick'@'%';
 grant execute on procedure assistant_dba.queue_task_mysql   to 'maverick'@'%';
 grant execute on procedure assistant_dba.task_scheduler_mysql  to 'maverick'@'%';
 grant execute on procedure assistant_dba.compare_version_mariabackup  to 'maverick'@'%';
+grant execute on procedure assistant_dba.compare_version_mysql_percona to 'maverick'@'%';
  

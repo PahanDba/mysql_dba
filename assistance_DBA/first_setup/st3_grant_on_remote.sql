@@ -1,7 +1,7 @@
 ############################################################
 # Granting privileges on remote servers
 ############################################################
-#create user 'maverick'@'%' identified by 'mysql12';
+create user 'maverick'@'%' identified by 'mysql12';
 ##процедура принудительного запуска analyze table по всем схемам - таблица исключая performance_schema
 drop procedure  if exists mysql.dba_analyze_table ;
 DELIMITER $$
@@ -35,4 +35,6 @@ DELIMITER ;
 
 grant show databases, references on *.* TO 'maverick'@'%';
 grant execute on procedure mysql.dba_analyze_table  to 'maverick'@'%';
+grant select on perfomance_schema.* TO 'maverick'@'%';
+grant file on *.* to  'maverick'@'%';
 

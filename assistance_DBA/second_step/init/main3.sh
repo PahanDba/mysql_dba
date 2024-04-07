@@ -86,13 +86,30 @@ tbl_server_name="\`mysql\`.\`tt_spr_mysql_server_"$in_server_name"\`" #variable 
 #drop temporary table if exists $tbl_server_name;
 #")
 ################end test for get mistake
+#check mysql: MariaDB or MySQL/Percona
+get_query_mysql_fork=("select @@version;")
+name_mysql_fork1=$(mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf -N -e "$get_query_mysql_fork") #> $path_out_filtered_option_server_mysql 2>$path_file_main_error_log_init_server #$path_out_db_list
+echo "name_mysql_fork: $name_mysql_fork1" >> $path_file_main_log_init_server
+#tools_run="/usr/bin/mariadb"
+name_mysql_fork=${name_mysql_fork1,,}
+if [[ "$name_mysql_fork" == *"mariadb"* ]]; then
+	#get list databases on remote server
+	sql_get_db_list=("select "$in_server_id" as in_server_id, "\"$in_server_name\"" as server_name, SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME,DEFAULT_COLLATION_NAME, SCHEMA_COMMENT 
+	from information_schema.SCHEMATA
+	order by SCHEMA_NAME;
+	")
+else
+	sql_get_db_list=("select "$in_server_id" as in_server_id, "\"$in_server_name\"" as server_name, SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME,DEFAULT_COLLATION_NAME, 'This is not MariaDB. ' as SCHEMA_COMMENT
+	from information_schema.SCHEMATA
+	order by SCHEMA_NAME;
+	")
+fi
+
+
+
 sql_server_options=("select @@server_id as 'server_id' , @@collation_server as 'collation_server', @@version as 'version';
 ")
-#get list databases on remote server
-sql_get_db_list=("select "$in_server_id" as in_server_id, "\"$in_server_name\"" as server_name, SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME,DEFAULT_COLLATION_NAME, SCHEMA_COMMENT 
-from information_schema.SCHEMATA
-order by SCHEMA_NAME;
-")
+
 #create intermediate table catalog databases with prefix $in_server_name on main server system
 tbl_server_name_list_db="dba_"$in_server_id"_list_db" #variable table name with dependencies server name
 db_concat_tbl_list_db="\`"$conn_db_main_temp"\`.\`"$tbl_server_name_list_db"\`"
@@ -157,9 +174,19 @@ while IFS=$'\t' read -r base_id_spr server_id server_name base_name characterset
 		 table_name, table_type, engine, row_format, table_collation, table_comment, ROUND(DATA_LENGTH / 1024 / 1024, 2) AS data_mb, ROUND(INDEX_LENGTH / 1024 / 1024, 2) AS index_mb,
 			ROUND(DATA_FREE / 1024 / 1024, 2) AS unsed_mb, TABLE_ROWS AS table_rows  from \`information_schema\`.\`tables\` where table_schema='$base_name'  and table_type='BASE TABLE'"
 	mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf -e "$sql_export_tbl_each_db"  > $path_out_tbl_list_db 2>$path_file_main_error_log_init_server
-	sql_export_view_each_db="SELECT "$base_id_spr" as base_id_spr, "$server_id" as server_id, "\"$server_name\"" as server_name, "\"$base_name\"" as base_name, "\"$characterset\"" as  characterset, "\"$collation_desc\"" as collation_desc,
-		 table_name, view_definition, check_option, is_updatable, definer, security_type, character_set_client, collation_connection, algorithm
-		 from \`information_schema\`.\`views\` where table_schema='$base_name'; "
+#	sql_export_view_each_db="SELECT "$base_id_spr" as base_id_spr, "$server_id" as server_id, "\"$server_name\"" as server_name, "\"$base_name\"" as base_name, "\"$characterset\"" as  characterset, "\"$collation_desc\"" as collation_desc,
+#		 table_name, view_definition, check_option, is_updatable, definer, security_type, character_set_client, collation_connection, algorithm
+#		 from \`information_schema\`.\`views\` where table_schema='$base_name'; "
+	if [[ "$name_mysql_fork" == *"mariadb"* ]]; then
+		sql_export_view_each_db="SELECT "$base_id_spr" as base_id_spr, "$server_id" as server_id, "\"$server_name\"" as server_name, "\"$base_name\"" as base_name, "\"$characterset\"" as  characterset, "\"$collation_desc\"" as collation_desc,
+			 table_name, view_definition, check_option, is_updatable, definer, security_type, character_set_client, collation_connection, algorithm
+			 from \`information_schema\`.\`views\` where table_schema='$base_name'; "
+	else
+		sql_export_view_each_db="SELECT "$base_id_spr" as base_id_spr, "$server_id" as server_id, "\"$server_name\"" as server_name, "\"$base_name\"" as base_name, "\"$characterset\"" as  characterset, "\"$collation_desc\"" as collation_desc,
+			 table_name, view_definition, check_option, is_updatable, definer, security_type, character_set_client, collation_connection, 'NotMariaDB' as algorithm
+			 from \`information_schema\`.\`views\` where table_schema='$base_name'; "
+
+	fi
 	mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf -e "$sql_export_view_each_db"  > $path_out_view_list_db 2>$path_file_main_error_log_init_server
 	sql_export_routine_each_db="SELECT "$base_id_spr" as base_id_spr, "$server_id" as server_id, "\"$server_name\"" as server_name, "\"$base_name\"" as base_name, "\"$characterset\"" as  characterset, "\"$collation_desc\"" as collation_desc,
 		 routine_name, routine_type, data_type, coalesce(character_maximum_length,0) as character_maximum_length, coalesce(character_octet_length,0) as character_octet_length, coalesce(numeric_precision,0) as numeric_precision, coalesce(numeric_scale,0) as numeric_scale, coalesce(datetime_precision,0) as datetime_precision, coalesce(character_set_name,'') as character_set_name, collation_name, dtd_identifier, routine_body,
@@ -225,8 +252,8 @@ while IFS=$'\t' read -r base_id_spr server_id server_name base_name characterset
     routine_name varchar(64) NOT NULL,
     routine_type varchar(13) NOT NULL,
     data_type varchar(64) NOT NULL,
-    character_maximum_length int(21) DEFAULT NULL,
-    character_octet_length int(21) DEFAULT NULL,
+    character_maximum_length bigint(20) DEFAULT NULL,
+    character_octet_length bigint(20) DEFAULT NULL,
     numeric_precision int(21) DEFAULT NULL,
     numeric_scale int(21) DEFAULT NULL,
     datetime_precision bigint(21) unsigned DEFAULT NULL,
@@ -249,7 +276,8 @@ while IFS=$'\t' read -r base_id_spr server_id server_name base_name characterset
     definer varchar(384) NOT NULL,
     character_set_client varchar(32) NOT NULL,
     collation_connection varchar(64) NOT NULL,
-    database_collation varchar(64) NOT NULL	);
+    database_collation varchar(64) NOT NULL	
+	);
 	")
 	sql_load_db_routine="LOAD DATA INFILE '$path_out_routine_list_db' INTO TABLE $routine_server_name_db FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;"
 	echo "Create table  $tbl_server_name_db and $view_server_name_db and $routine_server_name_db on $in_server_name and load data for processing in $(date +"%Y%m%d %H:%M:%S")"   >>  $path_file_main_log_init_server
@@ -260,13 +288,13 @@ while IFS=$'\t' read -r base_id_spr server_id server_name base_name characterset
 		else
 		echo "script name $path1 catch error on $base_name on $tbl_server_name_db and $view_server_name_db and $routine_server_name_db  for $in_server_name " > $path_file_main_error_log_init_server
 		echo "$sql_load_db_tbl ;"   >>  $path_file_main_log_init_server
-		echo "$sql_load_db_view ;"   >>  $path_file_main_log_init_server		
-		echo "$sql_load_db_routine;"   >>  $path_file_main_log_init_server				
 		mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "$sql_db_tbl" 2>$path_file_main_error_log_init_server  #< $path_out_tbl_list_db
 		mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "$sql_load_db_tbl" >> $path_file_main_log_init_server 2>$path_file_main_error_log_init_server # &1 
+		echo "$sql_load_db_view ;"   >>  $path_file_main_log_init_server		
 		mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "$sql_db_view" 2>$path_file_main_error_log_init_server  #< $path_out_tbl_list_db
 		mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "$sql_load_db_view" >> $path_file_main_log_init_server 2>$path_file_main_error_log_init_server # &1 
-		mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "$sql_db_routine" 2>$path_file_main_error_log_init_server  #< $path_out_tbl_list_db
+		echo "$sql_load_db_routine;"   >>  $path_file_main_log_init_server				
+		mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "$sql_db_routine" >> $path_file_main_log_init_server 2>$path_file_main_error_log_init_server  #< $path_out_tbl_list_db
 		mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "$sql_load_db_routine" >> $path_file_main_log_init_server 2>$path_file_main_error_log_init_server # &1 
 #пока только заполнил список процедур в промежуточную таблицу
 		echo "insert-update data in spr_mysql_table and spr_mysql_view tables on $in_server_name $(date +"%Y%m%d %H:%M:%S")"   >>  $path_file_main_log_init_server
@@ -289,8 +317,21 @@ while IFS=$'\t' read -r base_id_spr server_id server_name base_name characterset
 done < <(tail -n +2 $path_out_good_db_list)
 echo "End export all list table for each database from $in_server_name in $(date +"%Y%m%d %H:%M:%S")"   >>  $path_file_main_log_init_server
 echo "Export global variable with $server_name in $(date +"%Y%m%d %H:%M:%S")"  >>  $path_file_main_log_init_server 
-sql_export_global_variable="SELECT "$in_server_id" as server_id, variable_name, VARIABLE_VALUE FROM information_schema.GLOBAL_VARIABLES order by variable_name;"
-mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf  -e "$sql_export_global_variable" > $path_out_global_var_value 2>$path_file_main_error_log_init_server
+if [[ "$name_mysql_fork" == *"mariadb"* ]]; then
+	#sql_export_global_variable="SELECT "$in_server_id" as server_id, variable_name, replace(VARIABLE_VALUE, "'"'"'"'"'","'"'"\\'"'"'")  FROM information_schema.GLOBAL_VARIABLES order by variable_name;"
+	sql_export_global_variable="SELECT "$in_server_id" as server_id, variable_name, VARIABLE_VALUE FROM information_schema.GLOBAL_VARIABLES order by variable_name;"
+#	sql_export_global_variable="SELECT "$in_server_id" as server_id, variable_name, VARIABLE_VALUE INTO OUTFILE '$path_out_global_var_value'
+#       FIELDS TERMINATED BY '@@@@@' 
+#        LINES TERMINATED BY '\n' FROM information_schema.GLOBAL_VARIABLES order by variable_name;"
+else
+	sql_export_global_variable="SELECT "$in_server_id" as server_id, variable_name, VARIABLE_VALUE FROM performance_schema.global_variables order by variable_name;"
+#	sql_export_global_variable="SELECT "$in_server_id" as server_id, variable_name, VARIABLE_VALUE INTO OUTFILE '$path_out_global_var_value'
+#        FIELDS TERMINATED BY '@@@@@' 
+#        LINES TERMINATED BY '\n'  FROM performance_schema.global_variables order by variable_name;"
+fi
+#sql_export_global_variable="SELECT "$in_server_id" as server_id, variable_name, VARIABLE_VALUE FROM information_schema.GLOBAL_VARIABLES order by variable_name;"
+echo "sql_export_global_variable:$sql_export_global_variable" >>  $path_file_main_log_init_server 
+mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf  -e "$sql_export_global_variable;" > $path_out_global_var_value 2>$path_file_main_error_log_init_server
 echo "Import global variable on $server_name in $(date +"%Y%m%d %H:%M:%S")"  >>  $path_file_main_log_init_server 
 tbl_server_name_global_var="dba_"$in_server_id"_global_var" #variable table name with dependencies server name for global var
 db_concat_global_var="\`"$conn_db_main_temp"\`.\`"$tbl_server_name_global_var"\`"
@@ -299,13 +340,17 @@ create table $db_concat_global_var (
 id int not null auto_increment,
 server_id int not null,
 variable_name varchar(64) not null,
-variable_value varchar(2048),
+variable_value varchar(4096),
 PRIMARY KEY (\`id\`)
 );
 ")
+#replace special characters
+sed -i -e "s/'/\\\'/g" $path_out_global_var_value
 mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "use $conn_db_main_temp; $sql_global_var_remote_server" 2>$path_file_main_error_log_init_server
 while IFS=$'\t' read -r server_id variable_name variable_value
 	do
+	#mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "call assistant_dba.insert_global_var('$conn_db_main_temp','$tbl_server_name_global_var', $in_server_id, '$variable_name','$variable_value')"  2>$path_file_main_error_log_init_server
+	echo "call assistant_dba.insert_global_var('$conn_db_main_temp','$tbl_server_name_global_var', $in_server_id, '$variable_name','$variable_value');" >>  $path_file_main_log_init_server 
 	mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "call assistant_dba.insert_global_var('$conn_db_main_temp','$tbl_server_name_global_var', $in_server_id, '$variable_name','$variable_value')"  2>$path_file_main_error_log_init_server
 done < <(tail -n +2 $path_out_global_var_value)	
 echo "Check global variable: add new global variable on main server system $in_conn_super_main_server in $(date +"%Y%m%d %H:%M:%S")"   >>  $path_file_main_log_init_server
@@ -318,7 +363,12 @@ if [ -f "$path_out_good_global_var_value_ext" ];
 fi
 while IFS=$'\t' read -r var_id_spr server_id server_name variable_name
 	do
-	sql_export_global_variable_ext="SELECT "$var_id_spr" as var_id_spr, "$server_id" as server_id, variable_name, VARIABLE_VALUE FROM information_schema.GLOBAL_VARIABLES where variable_name='$variable_name' order by variable_name;"
+	if [[ "$name_mysql_fork" == *"mariadb"* ]]; then
+		sql_export_global_variable_ext="SELECT "$var_id_spr" as var_id_spr, "$server_id" as server_id, variable_name, VARIABLE_VALUE FROM information_schema.GLOBAL_VARIABLES where variable_name='$variable_name' order by variable_name;"
+	else
+		sql_export_global_variable_ext="SELECT "$var_id_spr" as var_id_spr, "$server_id" as server_id, variable_name, VARIABLE_VALUE FROM performance_schema.global_variables where variable_name='$variable_name' order by variable_name;"
+	fi
+	#sql_export_global_variable_ext="SELECT "$var_id_spr" as var_id_spr, "$server_id" as server_id, variable_name, VARIABLE_VALUE FROM information_schema.GLOBAL_VARIABLES where variable_name='$variable_name' order by variable_name;"
 	mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf -N -e "$sql_export_global_variable_ext"  >> $path_out_good_global_var_value_ext 2>$path_file_main_error_log_init_server
 done < <(tail -n +2 $path_out_good_global_var_value)	
 echo "Import global variable extended on $server_name in $(date +"%Y%m%d %H:%M:%S")"  >>  $path_file_main_log_init_server 
@@ -330,11 +380,13 @@ id int not null auto_increment,
 server_id int not null,
 var_id_spr bigint not null,
 variable_name varchar(64) not null,
-variable_value varchar(2048),
+variable_value varchar(4096),
 PRIMARY KEY (\`id\`)
 );
 ")
 mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "use $conn_db_main_temp; $sql_global_var_ext_remote_server" 2>$path_file_main_error_log_init_server
+#replace special characters
+sed -i -e "s/'/\\\'/g" $path_out_good_global_var_value_ext
 while IFS=$'\t' read -r var_id_spr server_id variable_name variable_value
 	do
 	mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "call assistant_dba.insert_global_var_ext('$conn_db_main_temp','$tbl_server_name_global_var_ext', $var_id_spr, $server_id, '$variable_name','$variable_value')"  2>$path_file_main_error_log_init_server
