@@ -511,7 +511,7 @@ Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_
 	```sql
 	sql
 	MariaDB> insert into `assistant_dba`.`version_major_minor_mariadb` (version_number) values ('10.11');
-	MariaDB> insert into `assistant_dba`.`version_compability_mariadb` (version_number,id_major_minor) values ('10.11.1-MariaDB', (select id_major_minor from assistant_dba.version_major_minor_mariadb where version_number='10.11')), ('10.11.2-MariaDB', (select id_major_minor from \`assistant_dba\`.\`version_major_minor_mariadb\` where version_number='10.11')), ('10.11.3-MariaDB', (select id_major_minor from \`assistant_dba\`.\`version_major_minor_mariadb\` where version_number='10.11')), ('10.11.4-MariaDB', (select id_major_minor from \`assistant_dba\`.\`version_major_minor_mariadb\` where version_number='10.11')), ('10.11.5-MariaDB', (select id_major_minor from \`assistant_dba\`.\`version_major_minor_mariadb\` where version_number='10.11')), ('10.11.6-MariaDB', (select id_major_minor from \`assistant_dba\`.\`version_major_minor_mariadb\` where version_number='10.11')), ('10.11.7-MariaDB', (select id_major_minor from \`assistant_dba\`.\`version_major_minor_mariadb\` where version_number='10.11'));
+	MariaDB> insert into `assistant_dba`.`version_compability_mariadb` (version_number,id_major_minor) values ('10.11.1-MariaDB', (select id_major_minor from assistant_dba.version_major_minor_mariadb where version_number='10.11')), ('10.11.2-MariaDB', (select id_major_minor from `assistant_dba`.`version_major_minor_mariadb` where version_number='10.11')), ('10.11.3-MariaDB', (select id_major_minor from `assistant_dba`.`version_major_minor_mariadb` where version_number='10.11')), ('10.11.4-MariaDB', (select id_major_minor from `assistant_dba`.`version_major_minor_mariadb` where version_number='10.11')), ('10.11.5-MariaDB', (select id_major_minor from `assistant_dba`.`version_major_minor_mariadb` where version_number='10.11')), ('10.11.6-MariaDB', (select id_major_minor from `assistant_dba`.`version_major_minor_mariadb` where version_number='10.11')), ('10.11.7-MariaDB', (select id_major_minor from `assistant_dba`.`version_major_minor_mariadb` where version_number='10.11'));
 	```
 
 	or
@@ -928,7 +928,7 @@ Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_
 
 	```sql
 	sql
-	MariaDB> select \* from assistant_dba.backup_path_variable_mysql;
+	MariaDB> select * from assistant_dba.backup_path_variable_mysql;
 	```
 
 	| **\# id** | **server_id** |     | **path_backup** | **path_last_full_backup** | **path_last_incr_backup** | **server_for_backup** | **user_for_backup** |
@@ -1019,7 +1019,7 @@ Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_
 
 	```sql
 	sql
-	MariaDB> select \* from \`assistant_dba\`.\`backup_task_run_mysql\`;
+	MariaDB> select * from `assistant_dba`.`backup_task_run_mysql`;
 	```
 
 	| **\# task_id** | **bt_id** | **creat_time** | **start_time** | **start_time_backup** | **end_time_backup** | **start_time_prepare** | **end_time_prepare** | **end_time** | **wait_task_id** | **task_progress** | **enable** | **file_log** |
