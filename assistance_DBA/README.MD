@@ -39,7 +39,7 @@ Assistance DBA system
 
 [**An example of adding a new server MariaDB to the system to collect data**](#An-example-of-adding-a-new-server-MariaDB-to-the-system-to-collect-data)
 
-[**An example of adding a new server MySQL/Percona (XtraDB Cluster) to the system to collect data**](#An-example-of-adding-a-new-server-MySQL-Percona-XtraDB-Cluster-to-the-system-to-collect-data)
+[**An example of adding a new server MySQL/Percona (XtraDB Cluster) to the system to collect data**](#An-example-of-adding-a-new-server-MySQL-Percona-XtraDB-Cluster)
 
 [**Configuring the backup module**](#Configuring-the-backup-module)
 
@@ -470,7 +470,7 @@ Connect to the server ‘mysql30226’ in MariaDB. Execute the script /first_ste
 
 Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_scripts/main1.sh and /etc/mysql/dba_scripts/main2.sh. If the scripts are completed without errors, the system will add information about the server.
 
-# <a id="An-example-of-adding-a-new-server-MySQL-Percona-XtraDB-Cluster-to-the-system-to-collect-data">**An example of adding a new server MySQL/Percona (XtraDB Cluster) to the system to collect data.**</a> 
+# <a id="An-example-of-adding-a-new-server-MySQL-Percona-XtraDB-Cluster">**An example of adding a new server MySQL/Percona (XtraDB Cluster) to the system to collect data.**</a> 
 
 To add a new server ‘mysql3081’ to the ‘Assistance DBA’ system, connect to the server ‘mysql30200’ via SSH and create a config file for ‘mysql3081’ /etc/mysql/dba_conf/init/mysql3081.cnf.
 
