@@ -503,7 +503,7 @@ Connect to the server ‘mysql3081’ in MySQL. Execute the script /first_step/s
 
 Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_scripts/main1.sh and /etc/mysql/dba_scripts/main2.sh. If the scripts are completed without errors, the system will add information about the server.
 
-# <a id="#Configuring-the-backup-module"> **Configuring the backup module**</a> 
+# <a id="Configuring-the-backup-module">**Configuring the backup module**</a> 
 
 1. To configure the backup module I will use the server that stores the backups. In my case this server is: ‘mysql30210’ – 10.10.30.210. Debian 11/12. MariaDB 10.11, mariadb-backup. 12 CPU, 10GB RAM, 200GB. On this server, mariadb-backup should be installed, which is compatible with the version of mariadb-backup on the database server that will be used for backup. Upon setup, the version compatibility table was initially populated for mariadb-backup 10.11 and compatibility versions 10.11 11 ('10.11.1-MariaDB', '10.11.2-MariaDB', '10.11.3-MariaDB', '10.11.4-MariaDB', '10.11.5-MariaDB', '10.11.6-MariaDB', '10.11.7-MariaDB'). For adding new compatibility versions for mariadb-backup, follow the example provided below.
 
