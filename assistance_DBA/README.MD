@@ -55,22 +55,22 @@ Assistance DBA system
 
 [**Scripts for collected information about the database size from each table each database in server MySQL**](#Scripts-for-collected-information-server-MySQL)
 
-# <a id="System-goals"> **System goals**</a>
+# <a id="System-goals">**System goals**</a>
 
 - It helps MySQL DBAs store historical data about table sizes and global variables of the database server.
 - Centralized management of database server backups with access to the history of executed backups.
 
-# <a id="System-features"> **System features**</a>
+# <a id="System-features">**System features**</a>
 
 - Developed and tested on the operating systems Debian 11/12 and RDBMS MariDB 10.11.
 - Supports and executes backups for MariaDB in various configurations, including standalone servers, Galera clusters, and master-slave replication from both master and slave nodes.
 - Consists of bash scripts and stored procedures in MySQL.
 
-# <a id="List-of-Servers-for-Demonstrating"> **List of Servers for Demonstrating the Setup and Operation of the ‘Assistance DBA’ System.**</a> 
+# <a id="List-of-Servers-for-Demonstrating">**List of Servers for Demonstrating the Setup and Operation of the ‘Assistance DBA’ System.**</a> 
 
 Below is a list of servers that shows the descriptions for each server with installed software. This list helps to understand and configure the ‘Assistance DBA’ system.
 
-## <a id="Server-system"> ***Server for the ‘Assistance DBA’ system***</a>  
+## <a id="Server-system">***Server for the ‘Assistance DBA’ system***</a>  
 
 ServerName: mysql30200   
 IP address: 10.10.30.200   
@@ -79,7 +79,7 @@ RDBMS: MariaDB 10.11
 Software for executed database backups: mariadb-backup   
 Server configuration: 2 CPU, 4GB RAM, 30GB   
 
-## <a id="Server-of-backup-storage-for-MariaDB-10_11"> ***Server of backup storage for MariaDB 10.11***</a>   
+## <a id="Server-of-backup-storage-for-MariaDB-10_11">***Server of backup storage for MariaDB 10.11***</a>   
 
 ServerName: mysql30210   
 IP address: 10.10.30.210   
@@ -88,7 +88,7 @@ RDBMS: MariaDB 10.11
 Software for executed database backups: mariadb-backup   
 Server configuration: 12 CPU, 10GB RAM, 200GB   
 
-## <a id="Server-of-backup-storage-for-MariaDB-11_3"> ***Server of backup storage for MariaDB 11.3***</a> 
+## <a id="Server-of-backup-storage-for-MariaDB-11_3">***Server of backup storage for MariaDB 11.3***</a> 
 
 ServerName: mysql30211   
 IP address: 10.10.30.211   
@@ -97,7 +97,7 @@ RDBMS: MariaDB 11.3
 Software for executed database backups: mariadb-backup   
 Server configuration: 8 CPU, 10GB RAM, 200GB   
 
-## <a id="Server-MariaDB-Galera-cluster"> ***Server MariaDB Galera cluster (3 nodes in a cluster)***</a> 
+## <a id="Server-MariaDB-Galera-cluster">***Server MariaDB Galera cluster (3 nodes in a cluster)***</a> 
 
 Node 1   
 ServerName: mysql30220   
@@ -123,7 +123,7 @@ RDBMS: MariaDB 11.3
 Software for executed database backups: mariadb-backup   
 Server configuration: 2 CPU, 4GB RAM, 50GB   
 
-## <a id="Server-MariaDB-standalone"> ***Server MariaDB standalone***</a> 
+## <a id="Server-MariaDB-standalone">***Server MariaDB standalone***</a> 
 
 ServerName: mysql30226   
 IP address: 10.10.30.226   
@@ -132,7 +132,7 @@ RDBMS: MariaDB 10.11
 Software for executed database backups: mariadb-backup   
 Server configuration: 2 CPU, 4GB RAM, 50GB   
 
-## <a id="Server-MariaDB-standalone-restore"> ***Server MariaDB standalone (restore from backup)***</a> 
+## <a id="Server-MariaDB-standalone-restore">***Server MariaDB standalone (restore from backup)***</a> 
 
 ServerName: mysql30227   
 IP address: 10.10.30.227   
@@ -141,7 +141,7 @@ RDBMS: MariaDB 11.3
 Software for executed database backups: mariadb-backup   
 Server configuration: 2 CPU, 4GB RAM, 50GB   
 
-## <a id="Server-of-backup-storage-for-Percona-XtraDB-Cluster"> ***Server of backup storage for Percona XtraDB Cluster***</a> 
+## <a id="Server-of-backup-storage-for-Percona-XtraDB-Cluster">***Server of backup storage for Percona XtraDB Cluster***</a> 
 
 ServerName: mysql3081   
 IP address: 10.10.30.81   
@@ -150,7 +150,7 @@ RDBMS:
 Software for executed database backups: xtrabackup version 8.0.35-30   
 Server configuration: 2 CPU, 4GB RAM, 50GB   
 
-## <a id="Server-Percona-XtraDB-Cluster-node-1"> ***Server Percona XtraDB Cluster (node 1)***</a> 
+## <a id="Server-Percona-XtraDB-Cluster-node-1">***Server Percona XtraDB Cluster (node 1)***</a> 
 
 ServerName: mysql3081   
 IP address: 10.10.30.81   
@@ -159,7 +159,7 @@ RDBMS: 8.0.35-27.1
 Software for executed database backups: xtrabackup version 8.0.35-30   
 Server configuration: 2 CPU, 4GB RAM, 50GB   
 
-## <a id="Server-Percona-XtraDB-Cluster-node-2"> ***Server Percona XtraDB Cluster (node 2)***</a> 
+## <a id="Server-Percona-XtraDB-Cluster-node-2">***Server Percona XtraDB Cluster (node 2)***</a> 
 
 ServerName: mysql3082   
 IP address: 10.10.30.82   
@@ -168,7 +168,7 @@ RDBMS: 8.0.35-27.1
 Software for executed database backups: xtrabackup version 8.0.35-30   
 Server configuration: 2 CPU, 4GB RAM, 50GB   
 
-## <a id="Server-Percona-XtraDB-Cluster-node-3"> ***Server Percona XtraDB Cluster (node 3)***</a> 
+## <a id="Server-Percona-XtraDB-Cluster-node-3">***Server Percona XtraDB Cluster (node 3)***</a> 
 
 ServerName: mysql3083   
 IP address: 10.10.30.83   
@@ -177,7 +177,7 @@ RDBMS: 8.0.35-27.1
 Software for executed database backups: xtrabackup version 8.0.35-30   
 Server configuration: 2 CPU, 4GB RAM, 50GB   
 
-# <a id="Initial-system-setup"> **Initial system setup**</a> 
+# <a id="Initial-system-setup">**Initial system setup**</a> 
 
 1. Module for Data Collection.   
 \- Collects information about the size of the tables from each database on each database server.   
@@ -193,7 +193,7 @@ Server configuration: 2 CPU, 4GB RAM, 50GB
 \- Diff backup: It performs a backup which saves data since the last Full backup and includes all schemas and tables on the server, is done once a day.   
 \- Incr backup: It performs a backup which saves data since the last Full backup or the last Incremental backup and includes all schemas and tables on the server.   
 
-## <a id="System-configuration-at-the-operating-system-level-Part-1"> ***System configuration at the operating system level. Part 1***</a> 
+## <a id="System-configuration-at-the-operating-system-level-Part-1">***System configuration at the operating system level. Part 1***</a> 
 
 Configuration of the ‘mysql30200’ server for working with MariaDB and creating users in the operation system.
 
@@ -255,13 +255,13 @@ vi
 
 After applying this option, a message about errors will be written in the file /var/mail/username, where ‘username’ is your username.
 
-## <a id="System-configuration-at-the-MariaDB-level"> ***System configuration at the MariaDB level***</a> 
+## <a id="System-configuration-at-the-MariaDB-level">***System configuration at the MariaDB level***</a> 
 
 1. Connect to the server ‘mysql30200’ in MariaDB with privileges for creating objects, users, and grant privileges.
 2. Execute the script /first_step/st1_create_structure.sql. This script creates two databases: ‘assistant_dba’ (the main database for the ‘Assistance DBA’ system) and ‘assistant_dba_temp’ (an external database for the ‘Assistance DBA’ system), along with the necessary structure.
 3. Execute the script /first_step/st2_grant_on_system.sql. This script creates user ‘maverick’@’%’ with password ‘mysql12’ (Attention!!! You need to change this password.) and grants privileges required for the system's operation.
 
-## <a id="System-configuration-at-the-operating-system-level-Part-2"> ***System configuration at the operating system level. Part 2***</a> 
+## <a id="System-configuration-at-the-operating-system-level-Part-2">***System configuration at the operating system level. Part 2***</a> 
 
 1. Connect to the server ‘mysql30200’ via SSH. Create the following directories:
 
@@ -322,7 +322,7 @@ After applying this option, a message about errors will be written in the file /
 
 	This script will remove unprintable symbols and establish permissions on the file system for executing scripts.
 
-## <a id="Configuration-of-scripts"> ***Configuration of scripts***</a> 
+## <a id="Configuration-of-scripts">***Configuration of scripts***</a> 
 
 1. Open files in any editor:
 
@@ -378,7 +378,7 @@ After applying this option, a message about errors will be written in the file /
 
 	After the proper configuration, this system will gather information about tables (tables of type ‘base table’) from every database server that is registered in the system.
 
-# <a id="Configuration-of-a-config-file-for-the-system"> **Configuration of a config file for the system**</a> 
+# <a id="Configuration-of-a-config-file-for-the-system">**Configuration of a config file for the system**</a> 
 
 1. Connect to the server ‘Assistance DBA’ (‘mysql30200’). Make a config file with the template /etc/mysql/dba_conf/server_name.cnf.
 
@@ -446,7 +446,7 @@ After applying this option, a message about errors will be written in the file /
 
 	If the scripts are completed without errors, the system will add information about the server. To receive information about servers registered in the system, you need to use the script /first_step/query_release.sql.
 
-# <a id="An-example-of-adding-a-new-server-MariaDB-to-the-system-to-collect-data"> **An example of adding a new server MariaDB to the system to collect data**</a> 
+# <a id="An-example-of-adding-a-new-server-MariaDB-to-the-system-to-collect-data">**An example of adding a new server MariaDB to the system to collect data**</a> 
 
 To add a new server ‘mysql30226’ to the ‘Assistance DBA’ system, connect to the server ‘mysql30200’ via SSH and create a config file for ‘mysql30226’ /etc/mysql/dba_conf/init/mysql30226.cnf.
 
@@ -470,7 +470,7 @@ Connect to the server ‘mysql30226’ in MariaDB. Execute the script /first_ste
 
 Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_scripts/main1.sh and /etc/mysql/dba_scripts/main2.sh. If the scripts are completed without errors, the system will add information about the server.
 
-# <a id="An-example-of-adding-a-new-server-MySQL-Percona-XtraDB-Cluster-to-the-system-to-collect-data"> **An example of adding a new server MySQL/Percona (XtraDB Cluster) to the system to collect data.**</a> 
+# <a id="An-example-of-adding-a-new-server-MySQL-Percona-XtraDB-Cluster-to-the-system-to-collect-data">**An example of adding a new server MySQL/Percona (XtraDB Cluster) to the system to collect data.**</a> 
 
 To add a new server ‘mysql3081’ to the ‘Assistance DBA’ system, connect to the server ‘mysql30200’ via SSH and create a config file for ‘mysql3081’ /etc/mysql/dba_conf/init/mysql3081.cnf.
 
@@ -775,7 +775,7 @@ Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_
 	yourusername@mysql30226:~# sudo chown -R maverick /var/log/assistant_dba/
 	```
 
-# <a id="Operation-of-the-backup-module"> **Operation of the backup module.**</a> 
+# <a id="Operation-of-the-backup-module">**Operation of the backup module.**</a> 
 
 1. Connect to the server ‘mysql30200’ in MariaDB as the user who created the database structure. Execute the query
 
@@ -1105,7 +1105,7 @@ Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_
 
 	To enable the backup module, you need to add tasks to the cron session for the user ‘maverick’ for the following scripts: /etc/mysql/dba_scripts/backup/backup0.sh and /etc/mysql/dba_scripts/backup/backup1.sh. It is recommended to schedule these tasks to run once a minute.
 
-# <a id="Restore-from-backups"> **Restore from backups.**</a> 
+# <a id="Restore-from-backups">**Restore from backups.**</a> 
 
 When restoring databases from backups, it's important to remember that the preparation operation ready been completed for full backups. For incremental or differential backups, you need to follow the typical procedure for restoration. For example, I will restore the backup database from the server ‘mysql30220’.
 
@@ -1301,9 +1301,9 @@ When restoring databases from backups, it's important to remember that the prepa
 	yourusername@mysql30227:~$ sudo /usr/bin/mariadb-backup --prepare --target-dir=/tmp/smuggler30220/full_20240228_2133 --incremental-dir=/tmp/smuggler30220/ full_20240228_2133_diff_20240229_1054
 	```
 
-# <a id="The-structure-system-database"> **The structure of ‘Assistance DBA’ system database.**</a> 
+# <a id="The-structure-system-database">**The structure of ‘Assistance DBA’ system database.**</a> 
 
-# <a id="Tables"> ***Tables***</a> 
+# <a id="Tables">***Tables***</a> 
 
 1. This table stores the servers types. For example, prod, test, developer, analytic. ***assistant_dba.list_server_type***   
 2. This table stores sql servers types. For example, mysql, postgresql, clickhouse. ***assistant_dba.list_sql_type***   
@@ -1326,7 +1326,7 @@ When restoring databases from backups, it's important to remember that the prepa
 19. This table stores MariaDB versions with major and minor symbols. ***assistant_dba.version_major_minor_mariadb***   
 20. This table stores MariaDB versions with all symbols. ***assistant_dba.version_compability_mariadb***   
 
-# <a id="Stored-procedures"> ***Stored procedures***</a> 
+# <a id="Stored-procedures">***Stored procedures***</a> 
 
 1. This procedure adds a new server type (prod, test, developer, analytic). ***assistant_dba.add_new_server_type***   
 2. This procedure adds a new sql type (mysql, postgresql, clickhouse.). ***assistant_dba.add_new_sql_type***   
@@ -1374,7 +1374,7 @@ When restoring databases from backups, it's important to remember that the prepa
 44. add the version number major_minor_mariadb. ***assistant_dba.add_version_major_minor_mariadb***   
 45. add the version number major_minor_mariadb. ***assistant_dba.add_version_compability_mariadb***   
 
-# <a id="Scripts-for-collected-information-server-MySQL"> **Scripts for collected information about the database size from each table each database in server MySQL**</a>
+# <a id="Scripts-for-collected-information-server-MySQL">**Scripts for collected information about the database size from each table each database in server MySQL**</a>
 
 1. This script, main1.sh exports a list of servers in MySQL, which you need to collect information about, to /var/log/assistant_db/mysql/init/list_alive_mysqlservers.txt.
 2. This script, main2.sh reads a list of servers from file /var/log/assistant_db/mysql/init/list_alive_mysqlservers.txt and gives its content to the main script, /etc/mysql/dba_scripts/init/main3.sh.
