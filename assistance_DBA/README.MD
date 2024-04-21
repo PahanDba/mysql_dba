@@ -573,6 +573,7 @@ Connect to the server ‘mysql30200’ via SSH. Run the scripts: /etc/mysql/dba_
 	```
 
 3. Connect to the server ‘mysql30226’ (Database server) via SSH and make a user in the operation system with the same name as in the previous paragraph. This user will execute the backup process. In my case the user will be named ‘smuggler30226’. Generate an SSH key for the user ‘smuggler30226’. Copy the SSH public key from the ‘mysql30226’ server to the ‘mysql30210’ server. Install ‘pigz’ and ‘mariadb-backup’ on the ‘mysql30226’ server. Add the user ‘smuggler30226’ to the root group and configure sudo without a password prompt. If you don't this operation, database backup won't work. The software ‘setfacl’ won’t help if you change permissions on the directory MySQL and add a new object (the table will be created in the catalog), then the permissions to the new directory won't apply, and the backup will end with an error. In the backup script, ensure that the user is a member of the root and sudo groups. The term "weak passwords" here is for instructional purposes only.
+	
 	For MariaDB
 
 	```bash
