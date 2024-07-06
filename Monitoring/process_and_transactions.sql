@@ -32,3 +32,26 @@ and (itx.trx_operation_state='' or itx.trx_operation_state is null)
 and (pl.info is null or pl.info='') and time_ms>0
 order by time_ms desc 
 limit 100;
+
+#The process list of open transactions has a detailed description.
+select pst.processlist_id, isilw.blocking_trx_id, pst.processlist_user, pst.processlist_host, pst.processlist_db, pst.processlist_command, pst.processlist_time, pst.processlist_state, pst.processlist_info, 
+isit.trx_started, isit.trx_requested_lock_id, isil.lock_id, isit.trx_state,  isit.trx_wait_started, isit.trx_weight, isit.trx_query, isit.trx_operation_state,
+isit.trx_tables_in_use, isit.trx_tables_locked, isit.trx_lock_memory_bytes, isit.trx_rows_locked, isit.trx_rows_modified, 
+ CASE
+           WHEN isil.lock_mode = 'S' THEN 'SHARED'
+           WHEN isil.lock_mode = 'X' THEN 'EXCLUSIVE'
+           WHEN isil.lock_mode = 'IS' THEN 'INTENTION_SHARED'
+           WHEN isil.lock_mode = 'IX' THEN 'INTENTION_EXCLUSIVE'
+           ELSE isil.lock_mode END                               AS lock_mode,
+isil.lock_type, isil.lock_table, isil.lock_index, 
+pst.thread_id, pst.parent_thread_id, pst.thread_os_id,
+now() as 'data_collect'
+from performance_schema.threads pst
+join information_schema.innodb_trx isit
+on pst.processlist_id=isit.trx_mysql_thread_id
+join information_schema.innodb_locks isil
+on isil.lock_trx_id=isit.trx_id
+left join information_schema.innodb_lock_waits isilw
+on isilw.requesting_trx_id=isit.trx_id
+order by isil.lock_id, isit.trx_weight desc;
+
