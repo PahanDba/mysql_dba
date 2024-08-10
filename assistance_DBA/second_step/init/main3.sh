@@ -54,7 +54,7 @@ path1=$dir_path1/$(basename "${BASH_SOURCE:-$0}")
 #option trap
 set -e
 trap 'LAST_COMMAND=$CURRENT_COMMAND; CURRENT_COMMAND=$BASH_COMMAND;' debug 
-trap 'ERROR_CODE=$?; ERROR_MESSAGE=`cat $path_file_main_error_log_init_server`; FAILED_COMMAND=$LAST_COMMAND; echo -e "Subject:глобальная ошибка сбора данных по серверу $server_name  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand before error: \"$FAILED_COMMAND\" \nfailed with message: \"$ERROR_MESSAGE \" " | /usr/sbin/sendmail $recipient_mail;' ERR INT TERM
+trap 'ERROR_CODE=$?; ERROR_MESSAGE=`cat $path_file_main_error_log_init_server`; FAILED_COMMAND=$LAST_COMMAND; echo -e "Subject:The global error about collecting data on the server $server_name  \n\nserver script: $HOSTNAME \npath script: $path1 \ncommand before error: \"$FAILED_COMMAND\" \nfailed with message: \"$ERROR_MESSAGE \" " | /usr/sbin/sendmail $recipient_mail;' ERR INT TERM
 #main script
 if [  -d "$log_path_mysql_init_servername" ];  then
         rm  -r "$log_path_mysql_init_servername"
@@ -88,7 +88,7 @@ tbl_server_name="\`mysql\`.\`tt_spr_mysql_server_"$in_server_name"\`" #variable 
 ################end test for get mistake
 #check mysql: MariaDB or MySQL/Percona
 get_query_mysql_fork=("select @@version;")
-name_mysql_fork1=$(mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf -N -e "$get_query_mysql_fork") #> $path_out_filtered_option_server_mysql 2>$path_file_main_error_log_init_server #$path_out_db_list
+name_mysql_fork1=$(mariadb  --defaults-extra-file=$path_config_mysql_init$in_server_name.cnf -N -e "$get_query_mysql_fork") > $path_out_filtered_option_server_mysql 2>$path_file_main_error_log_init_server #$path_out_db_list
 echo "name_mysql_fork: $name_mysql_fork1" >> $path_file_main_log_init_server
 #tools_run="/usr/bin/mariadb"
 name_mysql_fork=${name_mysql_fork1,,}
@@ -284,7 +284,7 @@ while IFS=$'\t' read -r base_id_spr server_id server_name base_name characterset
 	amount_symbol_name_db=${#base_name}
 	#check lenght database name. If lenght database name greate 45 symbol? collection data skip
 	if [[ $amount_symbol_name_db -gt 61 ]]
-		then echo -e "Subject:ошибка сбора данных по серверу $in_server_name и базе $base_name   \n\nskip collection data from database $base_name on server_name $in_server_name" | /usr/sbin/sendmail $recipient_mail
+		then echo -e "Subject:The global error about collecting data on the server $in_server_name and database $base_name   \n\nskip collection data from database $base_name on server_name $in_server_name" | /usr/sbin/sendmail $recipient_mail
 		else
 		echo "script name $path1 catch error on $base_name on $tbl_server_name_db and $view_server_name_db and $routine_server_name_db  for $in_server_name " > $path_file_main_error_log_init_server
 		echo "$sql_load_db_tbl ;"   >>  $path_file_main_log_init_server
@@ -392,7 +392,7 @@ while IFS=$'\t' read -r var_id_spr server_id variable_name variable_value
 	mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "call assistant_dba.insert_global_var_ext('$conn_db_main_temp','$tbl_server_name_global_var_ext', $var_id_spr, $server_id, '$variable_name','$variable_value')"  2>$path_file_main_error_log_init_server
 done < <(tail -n +1 $path_out_good_global_var_value_ext)	
 echo "Insert data in history_mysql_global_var from  $db_concat_global_var_ext on $in_conn_super_main_server in $(date +"%Y%m%d %H:%M:%S")"  >>  $path_file_main_log_init_server 
-echo "call assistant_dba.insert_history_global_var($server_id,'$conn_db_main_temp');"
+echo "call assistant_dba.insert_history_global_var($in_server_id,'$conn_db_main_temp');" >>  $path_file_main_log_init_server 
 mariadb  --defaults-extra-file=$path_config_mysql_init$in_conn_super_main_server.cnf -e "call assistant_dba.insert_history_global_var($in_server_id,'$conn_db_main_temp');" 2>$path_file_main_error_log_init_server
 echo "End work servername $in_server_name in $(date +"%Y%m%d %H:%M:%S")"  >>  $path_file_main_log_init_server
 #echo  -e "Subject:Общий  сбор данных по серверу $in_server_name \n\nработа по сбору данных с сервера $in_server_name закончена $(date +"%Y%m%d %H:%M:%S") "  | sendmail pavel.polikov@1win.pro

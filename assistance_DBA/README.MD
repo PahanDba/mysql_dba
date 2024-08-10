@@ -47,6 +47,8 @@ Assistance DBA system
 
 [**Restore from backups**](#Restore-from-backups)
 
+[**Configuration of privileges module**](#Configuration-of-privileges-module)
+
 [**The structure of ‘Assistance DBA’ system database**](#The-structure-system-database)
 
 >    [Tables](#Tables)
@@ -55,10 +57,13 @@ Assistance DBA system
 
 [**Scripts for collected information about the database size from each table each database in server MySQL**](#Scripts-for-collected-information-server-MySQL)
 
+[**Scripts for collected information about the privileges users have on each database server MySQL**](#Scripts-for-collected-information-users-MySQL)
+
 # <a id="System-goals">**System goals**</a>
 
 - It helps MySQL DBAs store historical data about table sizes and global variables of the database server.
 - Centralized management of database server backups with access to the history of executed backups.
+- It helps MySQL DBAs store historical data about privileges users of the database server.
 
 # <a id="System-features">**System features**</a>
 
@@ -191,7 +196,12 @@ Server configuration: 2 CPU, 4GB RAM, 50GB
    Types of backups.   
 \- Full backup: It performs a backup which saves data from all schemas and tables on the server, is done once a day.   
 \- Diff backup: It performs a backup which saves data since the last Full backup and includes all schemas and tables on the server, is done once a day.   
-\- Incr backup: It performs a backup which saves data since the last Full backup or the last Incremental backup and includes all schemas and tables on the server.   
+\- Incr backup: It performs a backup which saves data since the last Full backup or the last Incremental backup and includes all schemas and tables on the server. 
+
+3. Module for privileges collection.   
+\- Collects information about the privileges users have on each database server.   
+\- Depends on the ‘Module for Data Collection’.   
+  
 
 ## <a id="System-configuration-at-the-operating-system-level-Part-1">***System configuration at the operating system level. Part 1***</a> 
 
@@ -285,6 +295,11 @@ After applying this option, a message about errors will be written in the file /
 	/etc/mysql/dba_scripts/backup/backup1.sh
 	/etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
 	/etc/mysql/dba_scripts/init/main3.sh
+	/etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
+	/etc/mysql/dba_scripts/users/user0.sh
+	/etc/mysql/dba_scripts/users/user1.sh
+	/etc/mysql/dba_scripts/users/users2_mariadb.sh
+	/etc/mysql/dba_scripts/users/users2_mysql.sh
 	```
 
 3. Execute the commands specified in the comments to each file.
@@ -318,6 +333,21 @@ After applying this option, a message about errors will be written in the file /
 	yourusername@mysql30200:~$ sudo sed -i -e 's/\\r$//' /etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
 	yourusername@mysql30200:~$ sudo chown root /etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
 	yourusername@mysql30200:~$ sudo chmod 755 /etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
+	yourusername@mysql30200:~$ sudo sed -i -e 's/\r$//' /etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
+	yourusername@mysql30200:~$ sudo chown root  /etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
+	yourusername@mysql30200:~$ sudo chmod 755  /etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
+	yourusername@mysql30200:~$ sudo sed -i -e 's/\r$//' /etc/mysql/dba_scripts/users/user0.sh
+	yourusername@mysql30200:~$ sudo chown root  /etc/mysql/dba_scripts/users/user0.sh
+	yourusername@mysql30200:~$ sudo chmod 755  /etc/mysql/dba_scripts/users/user0.sh
+	yourusername@mysql30200:~$ sudo sed -i -e 's/\r$//' /etc/mysql/dba_scripts/users/user1.sh
+	yourusername@mysql30200:~$ sudo chown root  /etc/mysql/dba_scripts/users/user1.sh
+	yourusername@mysql30200:~$ sudo chmod 755  /etc/mysql/dba_scripts/users/user1.sh
+	yourusername@mysql30200:~$ sudo sed -i -e 's/\r$//' /etc/mysql/dba_scripts/users/users2_mariadb.sh
+	yourusername@mysql30200:~$ sudo chown root  /etc/mysql/dba_scripts/users/users2_mariadb.sh
+	yourusername@mysql30200:~$ sudo chmod 755  /etc/mysql/dba_scripts/users/users2_mariadb.sh
+	yourusername@mysql30200:~$ sudo sed -i -e 's/\r$//' /etc/mysql/dba_scripts/users/users2_mysql.sh
+	yourusername@mysql30200:~$ sudo chown root  /etc/mysql/dba_scripts/users/users2_mysql.sh
+	yourusername@mysql30200:~$ sudo chmod 755  /etc/mysql/dba_scripts/users/users2_mysql.sh
 	```
 
 	This script will remove unprintable symbols and establish permissions on the file system for executing scripts.
@@ -334,6 +364,11 @@ After applying this option, a message about errors will be written in the file /
 	/etc/mysql/dba_scripts/backup/backup1.sh
 	/etc/mysql/dba_scripts/backup/backup2_mariabackup.sh
 	/etc/mysql/dba_scripts/init/main3.sh
+	/etc/mysql/dba_scripts/backup/backup2_xtrabackup.sh
+	/etc/mysql/dba_scripts/users/user0.sh
+	/etc/mysql/dba_scripts/users/user1.sh
+	/etc/mysql/dba_scripts/users/users2_mariadb.sh
+	/etc/mysql/dba_scripts/users/users2_mysql.sh
 	```
 
 2. You need to change the following parameters in the scripts:
@@ -426,6 +461,14 @@ After applying this option, a message about errors will be written in the file /
 	# ip_add_in -extra ip address
 	# cluster_name_in - cluster name. You can choise type server from table `assistant_dba`.`list_clusters`
 	```
+	Important note! After you add a new server in the catalog of servers, in the table assistant_dba.list_mysql_server:  
+	- in the field exclude_user 0 is inserted. It means that information about privileges of users will be collected from each database server.
+	- in the field exclude_rost 0 is inserted. It means that information about the size of the tables will be collected from each database on each database server.
+
+	To turn off the collection of information about user privileges, you need to update the value of exclude_user from 0 to 1 for the selected database server.
+
+	To turn off the collection of information about the size of the tables, you need to update the value of exclude_rost from 0 to 1 for the selected database server.
+
 
 3. Connect to the added server (‘mysql30200’) in MariaDB. You need to create a user; in my case, the host, port, username, and password are in the file /etc/mysql/dba_conf/init/mysql30200.cnf. Execute the script /first_step/st3_grant_on_remote.sql. This script will create a procedure to force analysis of all tables on the server and grant the necessary privileges.
 4. Check the registered server on the system. Connect via SSH to the server ‘Assistance DBA’ (server name: ‘mysql30200’, username: ‘maverick’). Execute the first script, /etc/mysql/dba_scripts/main1.sh. If there are errors during script processing, an error file will be generated at /var/log/assistant_dba/mysql/init/get_list_mysqlserver_error.log. If the bash scripts and the post client are configured correctly, you will receive an email at the email address specified in the parameter recipient_mail. If there are no errors during script processing, a file containing the list of servers will be stored at /var/log/assistant_dba/mysql/init/list_alive_mysqlservers.txt.
@@ -1300,6 +1343,104 @@ When restoring databases from backups, it's important to remember that the prepa
 	bash
 	yourusername@mysql30227:~$ sudo /usr/bin/mariadb-backup --prepare --target-dir=/tmp/smuggler30220/full_20240228_2133 --incremental-dir=/tmp/smuggler30220/ full_20240228_2133_diff_20240229_1054
 	```
+# <a id="Configuration-of-privileges-module">**Configuration of privileges module.**</a>
+
+0. If you have configured and used the ‘Assistance DBA’ system since 2024-04-07, you need to execute additional scripts on the MariaDB database server with the ‘Assistance DBA’ system in the following sequence:
+   - /first_setup/add_20240407/st1_create_structure_add1.sql
+   - /first_setup/add_20240407/st2_grant_on_system_add1.sql
+	
+   If you are configuring the ‘Assistance DBA’ system for the first time, you don’t need to execute scripts from /first_setup/add_20240407/. 
+
+
+1. For the work of the privileges module, you need to execute some preparation operations.
+
+	For MariaDB
+
+	My examples include these database servers:
+	‘mysql30200’ - 10.10.30.200; ‘mysql30220’- 10.10.30.220; ‘mysql30221’- 10.10.30.221; ‘mysql30222’- 10.10.30.222; ‘mysql30226’- 10.10.30.226; ‘mysql30227’- 10.10.30.227;
+
+	You need to connect to each remote database server with the installed service MariaDB. Execute the script /first_step/st1_create_structure_mariadb.sql. This script makes procedure for exporting all users with all their privileges.
+
+	Then execute the script /first_step/st3_grant_on_remote_mariadb.sql. This script grants the necessary permissions to the user mysql - ‘maverick’ to execute this procedure.
+
+	For Percona/MySQL
+
+	My examples include these database servers:
+	‘mysql3081’ - 10.10.30.81; ‘mysql3082’- 10.10.30.82; ‘mysql3083’- 10.10.30.83; 
+
+	You need to connect to each remote database server with the installed service MySQL. Execute the script /first_step/st1_create_structure_mysql.sql. This script creates a procedure to export all users with all their privileges.
+
+	Next, execute the script /first_step/st3_grant_on_remote_mysql.sql. This script grants the necessary permissions to the user mysql - ‘maverick’ to execute this procedure.
+
+2. Connect to the server ‘mysql30200’ ‘Assistance DBA’ system via SSH. Create the following directories:
+
+	```bash
+	yourusername@mysql30200:~$ sudo mkdir /etc/mysql/dba_conf/users
+	```
+3. Adding a new server to collect data about the privileges on database mysql servers. 
+	
+	Connect to the server ‘Assistance DBA’ (‘mysql30200’). Make a config file with the template /etc/mysql/dba_conf/ users/server_name.cnf. 
+	
+	Example of the config file server_name.cnf:
+	
+	```bash
+	[client]
+	host=remote database server MySQL (server name or ip address)
+	port=3306
+	user=user for connecting to the server MariaDB
+	password=user’s password
+	```
+	In my case, the file name is /etc/mysql/dba_conf/users/mysql30200.cnf
+
+	```bash
+	[client]
+	host=10.10.30.200
+	port=3306
+	user=maverick
+	password=mysql12
+	```
+	
+	For your database server use your name and ip address. For all the servers from my example: ‘mysql30220’- 10.10.30.220; ‘mysql30221’- 10.10.30.221; ‘mysql30222’- 10.10.30.222; ‘mysql30226’- 10.10.30.226; ‘mysql30227’- 10.10.30.227; ‘mysql3081’ - 10.10.30.81; ‘mysql3082’- 10.10.30.82; ‘mysql3083’- 10.10.30.83 the config files are created in the same way.
+
+4. For automatic scripts execution, you need to add these scripts to the cron:
+
+	```bash
+	/etc/mysql/dba_scripts/users/user0.sh
+	/etc/mysql/dba_scripts/users/user1.sh
+	```
+	Set a schedule to execute it the once a day.
+	This script should be executed first:
+
+	```bash
+	/etc/mysql/dba_scripts/users/user0.sh
+	```
+
+	This script should be executed second, in 10 minutes (You should set intervals that depend on your real workload. You may need to increase the interval if the first script takes more than 10 minutes.)
+
+	```bash
+	/etc/mysql/dba_scripts/users/user1.sh
+	```
+
+	After the proper configuration, this system will gather information about the privileges of users from every database server that is registered in the system.
+
+	Important note!
+	Before executing the 'Module for Privileges Collection', you must first run the 'Module for Data Collection' because this module updates information about the versions of MariaDB/MySQL/Percona.
+	The catalog of users (table assistant_dba.list_mysql_users) has no foreign keys linking it to historical information about user privileges (tables assistant_dba.history_mysql_privileges and assistant_dba.history_mariadb_privileges). In the catalog of users, you can find information about:
+	- The first time users were added to the 'Assistance DBA' system.
+	- The date when the user was removed if the 'Module for Privileges Collection' runs every day.
+	- Whether the user was locked on the date the information was collected.
+	- The date the user was locked if the 'Module for Privileges Collection' runs every day.
+	- Whether the password expired.
+	- Whether the entry is a user or role on the date the information was collected.
+	This distinction is only accurate in MariaDB because MySQL does not clearly identify roles. I tested various combinations of indicators in MySQL, but none reliably distinguished roles from users. In MariaDB, a role has a clear indicator distinguishing it from a user. For MariaDB, values in the column is_role are Y if it is a role and N if it is a user. For MySQL, values in the column is_role are E.
+	The table contents provide historical information about user privileges differently for MySQL and MariaDB. In these tables, there is a column that contains the generation script for user privileges.
+
+
+	Important note! To export user privileges, I used the script from  https://github.com/mcavallo-git/Coding/blob/main/mysql/MySQL%20-%20Reverse%20Engineer%20MySQL%20Grants.sql.
+	I modified this script to suit my needs.
+
+
+
 
 # <a id="The-structure-system-database">**The structure of ‘Assistance DBA’ system database.**</a> 
 
@@ -1324,7 +1465,10 @@ When restoring databases from backups, it's important to remember that the prepa
 17. This table stores backup tasks ready for execution. ***assistant_dba.backup_task_run_mysql***   
 18. This table stores the history of backup tasks. ***assistant_dba.backup_task_log_mysql***   
 19. This table stores MariaDB versions with major and minor symbols. ***assistant_dba.version_major_minor_mariadb***   
-20. This table stores MariaDB versions with all symbols. ***assistant_dba.version_compability_mariadb***   
+20. This table stores MariaDB versions with all symbols. ***assistant_dba.version_compability_mariadb***
+21.	This table stores historical data about privileges for users on the database server MySQL. ***assistant_dba.history_mysql_privileges***
+22.	This table stores historical data about privileges for users on the database server MariaDB. ***assistant_dba.history_mariadb_privileges***
+    
 
 # <a id="Stored-procedures">***Stored procedures***</a> 
 
@@ -1372,7 +1516,12 @@ When restoring databases from backups, it's important to remember that the prepa
 42. Update last_time in backup_task_mysql. ***assistant_dba.upd_btm_last_time***   
 43. Check compare_version_mariabackup. ***assistant_dba.compare_version_mariabackup***   
 44. add the version number major_minor_mariadb. ***assistant_dba.add_version_major_minor_mariadb***   
-45. add the version number major_minor_mariadb. ***assistant_dba.add_version_compability_mariadb***   
+45. add the version number major_minor_mariadb. ***assistant_dba.add_version_compability_mariadb***  
+46.	get alive servers mysql for module permissions. ***assistant_dba.get_alive_users_server_mysql***
+47.	insert-update information about users. ***assistant_dba.check_users***
+48.	keeps track of and saves user permissions on MySQL servers. ***assistant_dba.save_track_user_permissions_mysql***
+49.	keeps track of and saves user permissions on MariaDB servers. ***assistant_dba.save_track_user_permissions_mariadb***
+ 
 
 # <a id="Scripts-for-collected-information-server-MySQL">**Scripts for collected information about the database size from each table each database in server MySQL**</a>
 
@@ -1408,5 +1557,23 @@ For example: the server name ‘server_name_dba’
 - The files of type /var/log/assistant_db/mysql/init/server_name_dba/server_name_dba_global_var_value.txt /var/log/assistant_db/mysql/init/server_name_dba/server_id_from_system_global_var_value.txt contain information about global variables of database server MySQL.
 - The files of type /var/log/assistant_db/mysql/init/server_name_dba/server_name_dba_good_global_var_value.txt /var/log/assistant_db/mysql/init/server_name_dba/server_id_from_system_good_global_var_value.txt contain information about global variables in database server MySQL with id from the catalog of the system database.
 - The files of type /var/log/assistant_db/mysql/init/server_name_dba/server_name_dba_good_global_var_value_ext.txt /var/log/assistant_db/mysql/init/server_name_dba/server_id_from_system_good_global_var_value_ext.txt contains information about global variables of database server MySQL with id from catalog of the system database + values of these variables for uploading in the database.
+
+
+# <a id="Scripts-for-collected-information-users-MySQL">**Scripts for collected information about the privileges users have on each database server MySQL**</a>
+
+1. This script, user0.sh exports a list of servers in MySQL, which you need to collect information about, to /var/log/assistant_db/mysql/users/users_list_mysqlservers.txt.
+2. This script, user1.sh, reads a list of servers from file /var/log/assistant_db/mysql/users/users_list_mysqlservers.txt, depending from the type MySQL installed on the remote server gives its content to the main script for MariaDB, /etc/mysql/dba_scripts/users/users2_mariadb.sh or the main script for MySQL/Percona, /etc/mysql/dba_scripts/users/users2_mysql.sh.
+3. These scripts /etc/mysql/dba_scripts/users/users2_mariadb.sh and  /etc/mysql/dba_scripts/users/users2_mysql.sh performs the following operations on all servers, which are in the file /var/log/assistant_db/mysql/users/ users_list_mysqlservers.txt:
+
+- updated-added information about users on the database server MySQL/MariaDB.
+- updated-added information about users privileges on the database server MySQL/MariaDB
+
+4. The log of the script /etc/mysql/dba_scripts/users/user0.sh is located in /var/log/assistant_db/mysql/users/step1_init_all.log.
+5. Log and the results of the works of scripts /etc/mysql/dba_scripts/users/users2_mariadb.sh and /etc/mysql/dba_scripts/users/users2_mysql.sh on each database server MySQL/Mariadb are created in /var/log/assistant_db/mysql/users/db_servername_mysql.
+
+For example: the server name ‘server_name_dba’
+- General log of the server work log is log, is created in /var/log/assistant_db/mysql/users/server_name_dba/server_name_dba_all.log. Detailed log with date and time.
+- Usually the log of errors contains the last error which is sent via email //var/log/assistant_db/mysql/users/server_name_dba/server_name_dba_error.log. In the end, if it worked OK, this file size will be 0 bytes.
+
 
 Written by Pavel A. Polikov <https://github.com/PahanDba/mysql_dba>

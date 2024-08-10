@@ -2,7 +2,7 @@
 # Granting privileges on remote servers
 ############################################################
 create user 'maverick'@'%' identified by 'mysql12';
-##процедура принудительного запуска analyze table по всем схемам - таблица исключая performance_schema
+##The procedure is to start command 'analyze table' for  each table in each schema, excluding performance_schema
 drop procedure  if exists mysql.dba_analyze_table ;
 DELIMITER $$
 create procedure mysql.dba_analyze_table ()
