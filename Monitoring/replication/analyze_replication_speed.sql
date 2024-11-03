@@ -49,17 +49,17 @@ alter EVENT mysql.`dba_check_speed_replication_on_my_server_slave` enable;
 
 
 #This script will need to help for the measure speed of replication.
-#Description the fields the result.
-# server_id - @@server_id main master server.
-# date_collect - datetime collect event. 
-# lag_repl_sec_on_slave - for how many seconds lag relication on the current replica. 
-# replica_name - @@hostname replica server.  
-# replica_id - @@server_id replica server.
-# lag_repl_sec_on_slave_prev - previous value for how many seconds lag relication on the current replica. 
-# date_collect_prev -previous value datetime collect event. 
-# lag_repl_delta - delta between previous and current seconds of replication lag on the current replica.
-# date_collect_delta - delta time in the seconds between previous and current datetime.
-# lag_repl_speed_sec_real_sec_status - Showing how many seconds of the replication were committed in the one real second on the replica server.
+#Description of the fields in the result:
+#server_id - @@server_id of the master server.
+#date_collect - Datetime when the event was collected.
+#lag_repl_sec_on_slave - The number of seconds that the replication is lagging on the current slave.
+#replica_name - @@hostname of the slave server.
+#replica_id - @@server_id of the slave server.
+#lag_repl_sec_on_slave_prev - The previous value for how many seconds the replication lagged on the current slave.
+#date_collect_prev - Previous value of the datetime when the event was collected.
+#lag_repl_delta - The difference between the previous and current seconds of replication lag on the current slave.
+#date_collect_delta - The time difference in seconds between the previous and current datetime.
+#lag_repl_speed_sec_real_sec_status - Indicates how many seconds of replication were committed in one real second on the slave server.
 
 select server_id, date_collect, lag_repl_sec_on_slave, replica_name, replica_id, lag_repl_sec_on_slave_prev, date_collect_prev,
 format (replace (lag_repl_sec_on_slave_prev, ',','') - replace (lag_repl_sec_on_slave, ',',''),2) as  lag_repl_delta,

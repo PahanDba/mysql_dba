@@ -1,0 +1,1 @@
+This is a repository created to help MySQL DBA's. Here I will be publishing different scripts and projects that will be interesting for MySQL DBA's.
