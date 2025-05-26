@@ -42,9 +42,9 @@ BEGIN
 	RETURN tmp_str;
 END$$
 DELIMITER ;
-drop procedure if exists `assistant_dba`.`count_con_each_users`;
+DROP PROCEDURE if exists assistant_dba.`count_con_each_users`;
 DELIMITER $$
-create procedure `assistant_dba`.`count_con_each_users` ()
+CREATE PROCEDURE assistant_dba.`count_con_each_users`()
 begin
 declare speciality condition for sqlstate '45000';
 SET sql_log_bin = 0;
@@ -54,24 +54,14 @@ set @error_check_function:= concat ('Warning! The function ''assistant_dba.regex
 set @var_server_id := (select @@server_id);
 set @var_server_name :=(select @@hostname);
 set @var_server_version := (select @@version);
-set @var_first_number_server_version := concat(SUBSTRING_INDEX(@@version, '.', 1),'.', SUBSTRING_INDEX(SUBSTRING_INDEX(@@version, '.', 2), '.', -1)) ;
+set @var_first_number_server_version := (select substring(@@version,1,3));
+#set @var_first_number_server_version := 5.0;
 #I check the version MySQL. If MySQL has a version less than 5.7, then this procedure has finished with an error.
     if @var_first_number_server_version<5.7 then
        signal speciality set message_text = @error_mysql_version;
 	end if;
+
 if @var_first_number_server_version<8 then 
-	set @check_version=5;
-	set @check_function=(select  coalesce((select 1 from information_schema.routines where ROUTINE_SCHEMA='assistant_dba' and ROUTINE_NAME='regexp_replace' and ROUTINE_TYPE='FUNCTION'),0,1));
-    if @check_function!=1 then
-       signal speciality set message_text = @error_check_function;
-	end if;
-    #I'll create the table which called server_idsevername. For example, the global variables has values server_id=3043 and hostname=mysql3043.
-    #The table will be named t_3043_mysql3043.
-    #I remove from the hostname the characters that do not satisfy the condition [a-z] or [A-Z] or [0-9] or _.
-    set @var_server_name_end :=(select assistant_dba.`regexp_replace`(@var_server_name ,'[^a-zA-Z0-9_]',''));
-    set @tblname_count_con_each_users=concat('t_',@var_server_id,'_',(select assistant_dba.`regexp_replace`(@var_server_name ,'[^a-zA-Z0-9_]','')));
-end if;    
-if @var_first_number_server_version>=8 then 
 	set @check_version=5;
 	set @check_function=(select  coalesce((select 1 from information_schema.routines where ROUTINE_SCHEMA='assistant_dba' and ROUTINE_NAME='regexp_replace' and ROUTINE_TYPE='FUNCTION'),0,1));
     if @check_function!=1 then
@@ -80,12 +70,30 @@ if @var_first_number_server_version>=8 then
     #I'll create the table which called server_idsevername. For example, the global variables has values server_id=3043 and hostname=mysql3043.
     #The table will be named 3043mysql3043.
     #I remove from the hostname the characters that do not satisfy the condition [a-z] or [A-Z] or [0-9] or _.
+    #set @var_server_name='wddjh34u0--dhbjdb--_!23!@#';
+    #set @var_server_name_end :=(select assistant_dba.`regexp_replace`(@var_server_name ,'[^a-zA-Z0-9_]',''));
+    set @tblname_count_con_each_users=concat('t_',@var_server_id,'_',(select assistant_dba.`regexp_replace`(@var_server_name ,'[^a-zA-Z0-9_]','')));
+end if;    
+
+if @var_first_number_server_version>=8 then 
+	set @check_version=8;
+	#set @check_function=(select  coalesce((select 1 from information_schema.routines where ROUTINE_SCHEMA='assistant_dba' and ROUTINE_NAME='regexp_replace' and ROUTINE_TYPE='FUNCTION'),0,1));
+    #if @check_function!=1 then
+    #   signal speciality set message_text = @error_check_function;
+	#end if;
+    #I'll create the table which called server_idsevername. For example, the global variables has values server_id=3043 and hostname=mysql3043.
+    #The table will be named 3043mysql3043.
+    #I remove from the hostname the characters that do not satisfy the condition [a-z] or [A-Z] or [0-9] or _.
+    #set @var_server_name='wddjh34u0--dhbjdb--_!23!@#';
+    #set @var_server_name_end :=(select regexp_replace(@var_server_name ,'[^a-zA-Z0-9_]',''));
     set @tblname_count_con_each_users=concat('t_',@var_server_id,'_',(select regexp_replace(@var_server_name ,'[^a-zA-Z0-9_]','')));
 end if;  
 	set @sql_create_tbl :=concat(' CREATE TABLE if not exists \`assistant_dba\`.',@tblname_count_con_each_users,' (\`id\` INT UNSIGNED NOT NULL AUTO_INCREMENT, \`user_name\` VARCHAR(64) NOT NULL, \`host_name\`  VARCHAR(64) NOT NULL, cnt int not null, date_collect datetime not null, PRIMARY KEY (\`id\`), key \`IX_user_host_date_collect\` (\`user_name\` asc, \`host_name\` asc, \`date_collect\`) ); '); 
+        #select @sql_create_tbl;
 		prepare dynamic_create_tbl from @sql_create_tbl;
 		execute dynamic_create_tbl;
         deallocate prepare dynamic_create_tbl;
+
 	set @sql_insert :=concat(' insert into \`assistant_dba\`.',@tblname_count_con_each_users,' (\`user_name\` , \`host_name\`, \`cnt\` , \`date_collect\`) 
 								select distinct user, left(host,(locate(":",host))-1) host_name,count(*) cnt, now() date_collect
                                 from information_schema.processlist 
@@ -94,8 +102,12 @@ end if;
 		prepare dynamic_insert from @sql_insert;
 		execute dynamic_insert;
         deallocate prepare dynamic_insert;
+
+        
+#select @var_server_id,@var_server_name, @var_server_version, @var_first_number_server_version, @tblname_count_con_each_users;
 end$$
 DELIMITER ;
+
 
 drop event if exists assistant_dba.`dba_count_con_each_users`;
 DELIMITER $$
