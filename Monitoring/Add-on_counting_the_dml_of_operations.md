@@ -98,7 +98,7 @@ In the future, when creating a new event on the master server, always use the DI
 
 2\. Create the necessary objects.
 
-You need to download and execute the script from [https://github.com/PahanDba/mysql_dba/Monitoring/count_dml_stmt/count_dml_stmt.sql ](https://github.com/PahanDba/mysql_dba/Monitoring/count_dml_stmt/%20count_dml_stmt.sql%20) via MySQL on the following servers:
+You need to download and execute the script from [https://github.com/PahanDba/mysql_dba/blob/main/Monitoring/count_dml_stmt/count_dml_stmt.sql ](https://github.com/PahanDba/mysql_dba/blob/main/Monitoring/count_dml_stmt/count_dml_stmt.sql) via MySQL on the following servers:
 
 - mysql3043 (Main Master, MySQL 5.7.42)
 - mysql3044 (slave from main master mysql3043 MySQL 8.0.40)
