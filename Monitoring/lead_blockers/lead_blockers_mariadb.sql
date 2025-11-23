@@ -1,13 +1,15 @@
-drop procedure if exists mysql.block_leader;
+#MariaDB
+drop procedure if exists mysql.lead_blockers;
 delimiter $$;
-create procedure mysql.block_leader ()
+create procedure mysql.lead_blockers ()
 /*
 shows locks on the server, sorts by the number of blocked processes
 Written by Pavel A. Polikov https://github.com/PahanDba/mysql_dba
 Developed and tested on the RDBMS MariDB 10.11.
-call mysql.block_leader();
+call mysql.lead_blockers();
 */
 begin
+SET sql_log_bin = 0;
 DROP TEMPORARY TABLE  if exists mysql.dba_all_waiting_locks;  
 CREATE TEMPORARY TABLE mysql.dba_all_waiting_locks (
   `waiting_thread` bigint(21) unsigned  NULL,
@@ -91,7 +93,7 @@ der.pl_w_host,
 der.blocking_thread,
 der.waiting_query,
 der.pl_w_TIME,
-count(cte.blocking_thread) AS leader_block2,
+count(cte.blocking_thread) AS lead_blockers2,
 now() as date_collect
 FROM (SELECT DISTINCT  waiting_thread,
 pl_w_user,
@@ -104,7 +106,7 @@ LEFT JOIN recursive_cte cte
 ON der.waiting_thread=cte.blocking_thread AND cte.blocking_thread!=0
 GROUP BY  
 der.waiting_thread, der.blocking_thread, der.waiting_query, der.pl_w_user
-ORDER BY leader_block2 DESC;
+ORDER BY lead_blockers2 DESC;
 DROP TEMPORARY TABLE  if exists mysql.dba_all_waiting_locks;  
 DROP TEMPORARY TABLE  if exists mysql.dba_only_block;
 end $$;
