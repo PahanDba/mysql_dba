@@ -1,0 +1,18 @@
+# This service unit is for data_mysql export.
+# By Pavel A Polikov
+# Licensed under MIT
+#-- Written by Pavel A. Polikov https://github.com/PahanDba/mysql_dba
+
+[Unit]
+Description=data_mysql
+Wants=data_mysql.timer
+
+[Service]
+Type=oneshot
+#User=postgres
+#Group=postgres
+ExecStart=/etc/assistant_dba/dba_scripts/monitoring/data_mysql.sh
+
+[Install]
+WantedBy=multi-user.target
+

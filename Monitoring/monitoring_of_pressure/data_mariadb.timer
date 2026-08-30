@@ -1,0 +1,16 @@
+# This timer unit is for data_mariadb export
+# By Pavel A Polikov
+# Licensed under MIT
+#-- Written by Pavel A. Polikov https://github.com/PahanDba/mysql_dba
+
+[Unit]
+Description=This timer unit is for data_mysql export
+Requires=data_mariadb.service
+
+[Timer]
+Unit=data_mariadb.service
+OnCalendar=*:*:0/5
+AccuracySec=1ms
+
+[Install]
+WantedBy=timers.target

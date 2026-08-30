@@ -1,0 +1,16 @@
+# This timer unit is for data_check_prepare_insert_mariadb.service
+# By Pavel A Polikov
+# Licensed under MIT
+#-- Written by Pavel A. Polikov https://github.com/PahanDba/mysql_dba
+
+[Unit]
+Description=This timer unit is for data_check_prepare_insert.service
+Requires=data_check_prepare_insert_mariadb.service
+
+[Timer]
+Unit=data_check_prepare_insert_mariadb.service
+OnCalendar=*:*:0/5
+AccuracySec=1ms
+
+[Install]
+WantedBy=timers.target

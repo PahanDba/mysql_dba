@@ -1,0 +1,15 @@
+# This service unit is for data_top_mariadb export.
+# By Pavel A Polikov
+# Licensed under MIT
+#-- Written by Pavel A. Polikov https://github.com/PahanDba/mysql_dba
+
+[Unit]
+Description=data_top_mariadb
+Wants=data_top_mariadb.timer
+
+[Service]
+Type=oneshot
+ExecStart=/etc/assistant_dba/dba_scripts/monitoring/data_top_mariadb.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+# This service unit is for data_check_prepare_insert_mysql.sh.
+# By Pavel A Polikov
+# Licensed under MIT
+#-- Written by Pavel A. Polikov https://github.com/PahanDba/mysql_dba
+
+[Unit]
+Description=data_check_prepare_insert_mysql
+Wants=data_check_prepare_insert_mysql.timer
+
+[Service]
+Type=oneshot
+ExecStart=/etc/assistant_dba/dba_scripts/monitoring/data_check_prepare_insert_mysql.sh
+
+[Install]
+WantedBy=multi-user.target
+
