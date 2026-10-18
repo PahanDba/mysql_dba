@@ -30,10 +30,22 @@ tblname_top="top_"$date_p
 #TOP_DATA=$(
 COLUMNS=512 HOME=$path_config_top top -H -n 2 -d 1 -b | awk -v awk_cpu_count="$cpu_count" -v awk_date_in="$date_in" '
   /^top -/ { snap++ }
-  snap == 2 && $2 == "mysql" && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9]+$/ {
-#    print $1","$9","$NF
-    print $1","$9",NO,"$12","$NF","awk_cpu_count","awk_date_in
-  }' | sed 's/,$/\n/' > $path_to_export
+  snap == 2 && $2 == "postgres" && $1 ~ /^[0-9]+$/ && $NF ~ /^[0-9]+$/ {
+	mem = $6
+    if (mem ~ /[gG]$/) {
+      sub(/[gG]$/, "", mem)
+      mem = int(mem * 1024 * 1024)   # GB to kB
+    } else if (mem ~ /[mM]$/) {
+      sub(/[mM]$/, "", mem)
+      mem = int(mem * 1024)          # MB to kB
+    } else if (mem ~ /[kK]$/) {
+      sub(/[kK]$/, "", mem)          # Removing the character k if exists.
+    } else if (mem ~ /[tT]$/) {
+      sub(/[tT]$/, "", mem)
+      mem = int(mem * 1024 * 1024 * 1024) # TB to kB
+    }
+    print $1","$9","mem",NO,"$12","$NF","awk_cpu_count","awk_date_in
+  }' | sed 's/,$/\n/'  > $path_to_export
 #')
 
 
